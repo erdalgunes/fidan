@@ -1,10 +1,11 @@
 using Toybox.Application.Storage;
+using Toybox.Application.Properties;
 using Toybox.Timer;
 using Toybox.Time;
 using Toybox.Attention;
 
 class SessionManager {
-    private const SESSION_DURATION = 1500; // 25 minutes in seconds
+    private var SESSION_DURATION = 1500; // 25 minutes in seconds (can be changed via settings)
     private const STORAGE_KEY_SESSION = "current_session";
     private const STORAGE_KEY_HISTORY = "session_history";
     
@@ -15,7 +16,15 @@ class SessionManager {
     private var _updateCallback;
 
     function initialize() {
+        loadSettings();
         loadState();
+    }
+    
+    function loadSettings() {
+        var duration = Properties.getValue("sessionDuration");
+        if (duration != null && duration > 0) {
+            SESSION_DURATION = duration * 60; // Convert minutes to seconds
+        }
     }
 
     function startSession() {
@@ -30,8 +39,8 @@ class SessionManager {
         _timer = new Timer.Timer();
         _timer.start(method(:onTimerTick), 1000, true);
         
-        // Vibrate to indicate start
-        if (Attention has :vibrate) {
+        // Vibrate to indicate start (if enabled)
+        if (Properties.getValue("vibrationEnabled") != false && Attention has :vibrate) {
             var vibePattern = [
                 new Attention.VibeProfile(50, 200),
                 new Attention.VibeProfile(0, 100),
@@ -63,8 +72,8 @@ class SessionManager {
         };
         saveSessionToHistory(completedSession);
         
-        // Vibrate pattern for stop
-        if (Attention has :vibrate) {
+        // Vibrate pattern for stop (if enabled)
+        if (Properties.getValue("vibrationEnabled") != false && Attention has :vibrate) {
             var vibePattern = [new Attention.VibeProfile(100, 500)];
             Attention.vibrate(vibePattern);
         }
@@ -86,8 +95,10 @@ class SessionManager {
             // Session completed successfully
             completeSession();
         } else if (_remainingTime % 300 == 0) {
-            // Vibrate every 5 minutes
-            if (Attention has :vibrate) {
+            // Vibrate every 5 minutes (if interval alerts enabled)
+            if (Properties.getValue("intervalAlerts") != false && 
+                Properties.getValue("vibrationEnabled") != false && 
+                Attention has :vibrate) {
                 var vibePattern = [new Attention.VibeProfile(25, 100)];
                 Attention.vibrate(vibePattern);
             }
@@ -105,8 +116,8 @@ class SessionManager {
             _timer = null;
         }
         
-        // Strong vibration for completion
-        if (Attention has :vibrate) {
+        // Strong vibration for completion (if enabled)
+        if (Properties.getValue("vibrationEnabled") != false && Attention has :vibrate) {
             var vibePattern = [
                 new Attention.VibeProfile(100, 300),
                 new Attention.VibeProfile(0, 200),
@@ -117,8 +128,8 @@ class SessionManager {
             Attention.vibrate(vibePattern);
         }
         
-        // Play tone if available
-        if (Attention has :playTone) {
+        // Play tone if available and enabled
+        if (Properties.getValue("soundEnabled") != false && Attention has :playTone) {
             Attention.playTone(Attention.TONE_SUCCESS);
         }
         
@@ -193,13 +204,29 @@ class SessionManager {
             history = [];
         }
         
-        // Keep only last 50 sessions
-        if (history.size() >= 50) {
+        // Check memory status and adjust history limit accordingly
+        var memoryMonitor = MemoryMonitor.getInstance();
+        var memoryStatus = memoryMonitor.checkMemoryStatus();
+        var maxSessions = 50;
+        
+        if (memoryStatus == :critical) {
+            maxSessions = 10;
+        } else if (memoryStatus == :low) {
+            maxSessions = 20;
+        } else if (memoryMonitor.isLowEndDevice()) {
+            maxSessions = 30;
+        }
+        
+        // Keep only specified number of recent sessions
+        if (history.size() >= maxSessions) {
             history = history.slice(1, null);
         }
         
         history.add(session);
         Storage.setValue(STORAGE_KEY_HISTORY, history);
+        
+        // Perform cleanup if needed
+        memoryMonitor.performCleanup(memoryStatus);
     }
 
     function getSessionHistory() {
@@ -208,6 +235,7 @@ class SessionManager {
     }
 
     function updateSettings() {
-        // Future: Handle user preferences from settings
+        // Reload settings when they change
+        loadSettings();
     }
 }

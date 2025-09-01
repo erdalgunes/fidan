@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="20" cy="20" r="19" fill="#2E7D32" stroke="#1B5E20" stroke-width="1"/>
+  
+  <!-- Tree trunk -->
+  <rect x="18" y="24" width="4" height="8" fill="#6D4C41"/>
+  
+  <!-- Tree crown (simplified pine tree shape) -->
+  <path d="M20 8 L12 18 L15 18 L10 25 L14 25 L9 32 L31 32 L26 25 L30 25 L25 18 L28 18 Z" 
+        fill="#4CAF50" stroke="#388E3C" stroke-width="0.5"/>
+  
+  <!-- Small highlight on crown -->
+  <circle cx="20" cy="15" r="2" fill="#81C784" opacity="0.6"/>
+</svg>

@@ -89,8 +89,8 @@ class MenuDelegate extends WatchUi.Menu2InputDelegate {
             var view = new StatsView(_sessionManager);
             WatchUi.pushView(view, new StatsDelegate(), WatchUi.SLIDE_UP);
         } else if (id.equals("settings")) {
-            // Future: Show settings view
-            // Settings not yet implemented
+            var view = new SettingsView();
+            WatchUi.pushView(view, new SettingsDelegate(view), WatchUi.SLIDE_UP);
         } else if (id.equals("about")) {
             var view = new AboutView();
             WatchUi.pushView(view, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_UP);

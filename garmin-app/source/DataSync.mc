@@ -1,6 +1,7 @@
 using Toybox.Communications;
 using Toybox.Application.Storage;
 using Toybox.WatchUi;
+using Toybox.Timer;
 
 class DataSync {
     private const MSG_TYPE_SESSION_START = 1;
@@ -9,7 +10,14 @@ class DataSync {
     private const MSG_TYPE_SYNC_REQUEST = 4;
     private const MSG_TYPE_SETTINGS_UPDATE = 5;
     
+    // Retry configuration
+    private const MAX_RETRY_ATTEMPTS = 5;
+    private const INITIAL_RETRY_DELAY = 2000; // 2 seconds in milliseconds
+    private const MAX_RETRY_DELAY = 60000; // 60 seconds max delay
+    
     private var _pendingSync = [];
+    private var _retryQueue = {};
+    private var _retryTimer;
 
     function initialize() {
         // Check if phone is connected
@@ -69,6 +77,11 @@ class DataSync {
 
     function sendMessage(message) {
         if (System.getDeviceSettings().phoneConnected) {
+            // Add message ID for tracking retries
+            if (!message.hasKey("messageId")) {
+                message["messageId"] = System.getTimer();
+            }
+            
             Communications.transmit(
                 message,
                 null,
@@ -97,6 +110,11 @@ class DataSync {
     }
 
     function onTransmitComplete(message) {
+        // Remove from retry queue if exists
+        if (message.hasKey("messageId")) {
+            _retryQueue.remove(message["messageId"]);
+        }
+        
         // Remove from unsent queue if exists
         var unsentSessions = Storage.getValue("unsent_sessions");
         if (unsentSessions != null) {
@@ -110,9 +128,78 @@ class DataSync {
         }
     }
 
+    /**
+     * Handles transmission errors with exponential backoff retry logic
+     * 
+     * Retry schedule:
+     * - Attempt 1: 2s delay
+     * - Attempt 2: 4s delay (±10% jitter)
+     * - Attempt 3: 8s delay (±10% jitter)
+     * - Attempt 4: 16s delay (±10% jitter)
+     * - Attempt 5: 32s delay (±10% jitter, capped at 60s)
+     * - After 5 attempts: Store message for later sync when connection available
+     * 
+     * Jitter prevents thundering herd problem when multiple messages fail simultaneously
+     * 
+     * @param message The message that failed to transmit
+     */
     function onTransmitError(message) {
-        // Keep in queue for retry
-        queueForSync(message);
+        // Ensure message has unique ID for tracking
+        if (!message.hasKey("messageId")) {
+            message["messageId"] = System.getTimer();
+        }
+        
+        var messageId = message["messageId"];
+        var retryInfo = _retryQueue.get(messageId);
+        
+        // Initialize retry tracking for new message
+        if (retryInfo == null) {
+            retryInfo = {
+                "message" => message,
+                "attempts" => 0,
+                "nextDelay" => INITIAL_RETRY_DELAY
+            };
+        }
+        
+        retryInfo["attempts"]++;
+        
+        if (retryInfo["attempts"] < MAX_RETRY_ATTEMPTS) {
+            // Add to retry queue and schedule retry
+            _retryQueue[messageId] = retryInfo;
+            scheduleRetry(messageId, retryInfo["nextDelay"]);
+            
+            // Calculate next delay with exponential backoff and jitter
+            var nextDelay = retryInfo["nextDelay"] * 2;
+            if (nextDelay > MAX_RETRY_DELAY) {
+                nextDelay = MAX_RETRY_DELAY;
+            }
+            // Add random jitter (±10%) to prevent synchronized retries
+            var jitter = (nextDelay * 0.2 * Math.rand()) - (nextDelay * 0.1);
+            retryInfo["nextDelay"] = nextDelay + jitter.toNumber();
+        } else {
+            // Max retries exceeded - fallback to persistent storage for later sync
+            queueForSync(message);
+            _retryQueue.remove(messageId);
+        }
+    }
+    
+    function scheduleRetry(messageId, delay) {
+        if (_retryTimer != null) {
+            _retryTimer.stop();
+        }
+        _retryTimer = new Timer.Timer();
+        _retryTimer.start(method(:processRetry), delay, false);
+    }
+    
+    function processRetry() {
+        // Process all pending retries
+        var keys = _retryQueue.keys();
+        for (var i = 0; i < keys.size(); i++) {
+            var retryInfo = _retryQueue[keys[i]];
+            if (retryInfo != null && System.getDeviceSettings().phoneConnected) {
+                sendMessage(retryInfo["message"]);
+            }
+        }
     }
 
     function handleBackgroundData(data) {

@@ -37,50 +37,63 @@ class FidanView extends WatchUi.View {
         drawStatus(dc, isActive);
     }
 
+    /**
+     * Draws the tree visualization that grows with session progress
+     * Tree growth algorithm:
+     * - Inactive: Shows a small seed (two concentric circles)
+     * - 0-20% progress: Shows only the trunk growing
+     * - 20-40% progress: Adds main crown (single circle)
+     * - 40-60% progress: Adds side branches (smaller circles)
+     * - 60-100% progress: Adds top detail for depth
+     * 
+     * @param dc Drawing context
+     * @param progress Float from 0.0 to 1.0 representing session completion
+     * @param isActive Boolean indicating if session is currently running
+     */
     function drawTree(dc, progress, isActive) {
         var treeY = _centerY - 40;
         
         if (!isActive) {
-            // Draw seed icon when inactive
+            // Draw seed icon when inactive - two concentric circles
             dc.setColor(Graphics.COLOR_DK_GREEN, Graphics.COLOR_TRANSPARENT);
             dc.fillCircle(_centerX, treeY, 8);
             dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
             dc.fillCircle(_centerX, treeY, 6);
         } else {
-            // Draw growing tree based on progress
+            // Tree dimensions scale with progress (max 60px height, 40px width)
             var treeHeight = (60 * progress).toNumber();
             var treeWidth = (40 * progress).toNumber();
             
-            // Draw trunk
-            dc.setColor(0x8B4513, Graphics.COLOR_TRANSPARENT); // Brown
+            // Draw trunk - starts growing immediately, max 20px height
+            dc.setColor(0x8B4513, Graphics.COLOR_TRANSPARENT); // Brown color
             var trunkHeight = (20 * progress).toNumber();
             dc.fillRectangle(_centerX - 3, treeY, 6, trunkHeight);
             
-            // Draw leaves/crown
+            // Draw crown/foliage - only appears after 20% progress
             if (progress > 0.2) {
                 dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
                 
-                // Draw tree crown as overlapping circles for a more organic look
+                // Calculate crown position and size
                 var crownY = treeY - treeHeight / 2;
                 var crownRadius = treeWidth / 2;
                 
-                // Main crown
+                // Main crown - central circle representing bulk of foliage
                 dc.fillCircle(_centerX, crownY, crownRadius);
                 
-                // Side branches
+                // Side branches - add width and realism at 40% progress
                 if (progress > 0.4) {
                     dc.fillCircle(_centerX - crownRadius/2, crownY + 5, crownRadius * 0.7);
                     dc.fillCircle(_centerX + crownRadius/2, crownY + 5, crownRadius * 0.7);
                 }
                 
-                // Top detail
+                // Top detail - darker green highlight for depth at 60% progress
                 if (progress > 0.6) {
                     dc.setColor(Graphics.COLOR_DK_GREEN, Graphics.COLOR_TRANSPARENT);
                     dc.fillCircle(_centerX, crownY - crownRadius/2, crownRadius * 0.5);
                 }
             }
             
-            // Draw progress ring around tree
+            // Draw progress ring around entire tree for precise progress indication
             drawProgressRing(dc, _centerX, treeY, 50, progress);
         }
     }
