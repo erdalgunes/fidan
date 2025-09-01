@@ -48,6 +48,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.core.domain)
     implementation(projects.core.data)
+    implementation(projects.features.home)
     implementation(projects.features.timer)
     implementation(projects.features.forest)
     implementation(projects.features.settings)

@@ -7,11 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.erdalgunes.fidan.core.ui.theme.FidanTheme
+import com.erdalgunes.fidan.feature.home.HomeScreen
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.foundation.CircuitCompositionLocals
 import com.slack.circuit.foundation.NavigableCircuitContent
@@ -43,21 +41,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-// Temporary home screen for initial setup
-object HomeScreen : com.slack.circuit.runtime.screen.Screen
-
-@Composable
-fun HomeContent() {
-    Text("Welcome to Fidan - Your Focus Companion")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    FidanTheme {
-        HomeContent()
     }
 }

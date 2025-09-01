@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.erdalgunes.fidan.feature.timer"
+    namespace = "com.erdalgunes.fidan.feature.home"
 }
 
 dependencies {

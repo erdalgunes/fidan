@@ -7,5 +7,6 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.data)
+    // Dependencies are handled by the feature convention plugin
+    // which includes core.ui and core.domain
 }

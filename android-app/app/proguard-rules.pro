@@ -20,12 +20,9 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Circuit
--keep class com.slack.circuit.** { *; }
+# Circuit - only keep what's necessary for reflection
+-keep class * implements com.slack.circuit.runtime.screen.Screen
 
-# Hilt
--keep class dagger.hilt.** { *; }
--keep class javax.inject.** { *; }
+# Hilt - Rules are added automatically by the Hilt plugin
 
-# Compose
--keep class androidx.compose.** { *; }
+# Compose - Rules are handled by R8 and the Compose compiler plugin

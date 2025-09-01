@@ -28,7 +28,7 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("circuit-overlay").get())
                 add("implementation", libs.findLibrary("circuit-retained").get())
                 add("implementation", libs.findLibrary("circuit-codegen-annotations").get())
-                add("kapt", libs.findLibrary("circuit-codegen").get())
+                add("ksp", libs.findLibrary("circuit-codegen").get())
             }
         }
     }
