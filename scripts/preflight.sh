@@ -58,14 +58,14 @@ FAILED_CHECKS=()
 print_header "1. JAVA VERSION CHECK"
 if command -v java &> /dev/null; then
     JAVA_VERSION=$(java -version 2>&1 | head -n 1 | cut -d'"' -f2 | cut -d'.' -f1)
-    if [ "$JAVA_VERSION" = "17" ] || [ "$JAVA_VERSION" = "21" ]; then
-        print_success "Java $JAVA_VERSION detected"
+    if [ "$JAVA_VERSION" -ge "17" ]; then
+        print_success "Java $JAVA_VERSION detected (17+ required)"
     else
-        print_error "Java 17 or 21 required (found: $JAVA_VERSION)"
+        print_error "Java 17+ required (found: $JAVA_VERSION)"
         FAILED_CHECKS+=("Java version")
     fi
 else
-    print_error "Java not found. Please install JDK 17"
+    print_error "Java not found. Please install JDK 17+"
     FAILED_CHECKS+=("Java installation")
 fi
 
