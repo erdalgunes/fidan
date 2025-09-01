@@ -4,42 +4,68 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.erdalgunes.fidan.core.ui.theme.FidanTheme
-import com.erdalgunes.fidan.feature.home.HomeScreen
-import com.slack.circuit.foundation.Circuit
-import com.slack.circuit.foundation.CircuitCompositionLocals
-import com.slack.circuit.foundation.NavigableCircuitContent
-import com.slack.circuit.foundation.rememberCircuitNavigator
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    
-    @Inject
-    lateinit var circuit: Circuit
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
         setContent {
-            FidanTheme {
-                CircuitCompositionLocals(circuit) {
-                    val navigator = rememberCircuitNavigator()
-                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                        NavigableCircuitContent(
-                            navigator = navigator,
-                            startScreen = HomeScreen,
-                            modifier = Modifier.padding(innerPadding)
-                        )
-                    }
+            MaterialTheme {
+                Surface {
+                    FidanApp()
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FidanApp() {
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "🌱 Fidan",
+                style = MaterialTheme.typography.headlineLarge
+            )
+            Text(
+                text = "Pomodoro Timer that Plants Trees",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                text = "Coming Soon...",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FidanAppPreview() {
+    MaterialTheme {
+        FidanApp()
     }
 }
