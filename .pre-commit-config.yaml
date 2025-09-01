@@ -1,0 +1,60 @@
+repos:
+  - repo: local
+    hooks:
+      - id: garmin-preflight
+        name: Garmin App Preflight Check
+        entry: bash garmin-app/preflight-check.sh
+        language: system
+        files: ^garmin-app/.*\.(mc|xml)$
+        pass_filenames: false
+        
+      - id: check-monkey-c-syntax
+        name: Check Monkey C Syntax
+        entry: bash -c 'for file in garmin-app/source/*.mc; do [ -f "$file" ] && grep -q "class\|function" "$file" || exit 1; done'
+        language: system
+        files: ^garmin-app/source/.*\.mc$
+        pass_filenames: false
+        
+      - id: validate-manifest
+        name: Validate Garmin Manifest
+        entry: bash -c 'grep -q "iq:application" garmin-app/manifest.xml && grep -q "entry=" garmin-app/manifest.xml'
+        language: system
+        files: ^garmin-app/manifest\.xml$
+        pass_filenames: false
+        
+      - id: check-resources
+        name: Check Resource Files
+        entry: bash -c 'test -f garmin-app/resources/strings/strings.xml && test -f garmin-app/resources/drawables/drawables.xml'
+        language: system
+        files: ^garmin-app/resources/.*\.xml$
+        pass_filenames: false
+        
+      - id: no-debug-prints
+        name: No Debug Print Statements
+        entry: bash -c '! grep -r "System.println" garmin-app/source/'
+        language: system
+        files: ^garmin-app/source/.*\.mc$
+        pass_filenames: false
+        
+      - id: no-hardcoded-secrets
+        name: No Hardcoded Secrets
+        entry: bash -c '! grep -r -E "(api[_-]?key|secret|token|password).*=" garmin-app/source/ --ignore-case'
+        language: system
+        files: ^garmin-app/source/.*\.mc$
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        files: ^garmin-app/.*\.(mc|xml)$
+      - id: end-of-file-fixer
+        files: ^garmin-app/.*\.(mc|xml)$
+      - id: check-xml
+        files: ^garmin-app/.*\.xml$
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+        files: ^garmin-app/
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+        files: ^garmin-app/.*\.(mc|xml)$

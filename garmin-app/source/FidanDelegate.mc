@@ -90,7 +90,7 @@ class MenuDelegate extends WatchUi.Menu2InputDelegate {
             WatchUi.pushView(view, new StatsDelegate(), WatchUi.SLIDE_UP);
         } else if (id.equals("settings")) {
             // Future: Show settings view
-            System.println("Settings not yet implemented");
+            // Settings not yet implemented
         } else if (id.equals("about")) {
             var view = new AboutView();
             WatchUi.pushView(view, new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_UP);
