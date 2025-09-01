@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Pre-commit hook - Quick checks before commit
+# To enable: git config core.hooksPath .githooks
+
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}Running pre-commit checks...${NC}"
+
+PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+ANDROID_DIR="${PROJECT_ROOT}/android-app"
+
+# Only run if android files are being committed
+if git diff --cached --name-only | grep -q "^android-app/"; then
+    echo "Android files detected in commit, running checks..."
+    
+    cd "${ANDROID_DIR}"
+    
+    # Quick compile check (faster than full build)
+    echo "Running compilation check..."
+    if ./gradlew compileDebugKotlin --no-daemon --quiet; then
+        echo -e "${GREEN}✓ Compilation successful${NC}"
+    else
+        echo -e "${YELLOW}✗ Compilation failed${NC}"
+        echo "Fix compilation errors before committing"
+        exit 1
+    fi
+    
+    # KtLint check if available
+    if ./gradlew tasks --all | grep -q "ktlintCheck"; then
+        echo "Running KtLint..."
+        if ./gradlew ktlintCheck --no-daemon --quiet; then
+            echo -e "${GREEN}✓ KtLint passed${NC}"
+        else
+            echo -e "${YELLOW}✗ KtLint found issues${NC}"
+            echo "Run './gradlew ktlintFormat' to fix"
+            exit 1
+        fi
+    fi
+fi
+
+echo -e "${GREEN}✓ Pre-commit checks passed${NC}"
+exit 0

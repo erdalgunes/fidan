@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Pre-push hook - Runs preflight checks before push
+# To enable: git config core.hooksPath .githooks
+
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}Running preflight checks before push...${NC}"
+
+# Find the preflight script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "${SCRIPT_DIR}/.." && pwd )"
+PREFLIGHT_SCRIPT="${PROJECT_ROOT}/scripts/preflight.sh"
+
+if [ -f "$PREFLIGHT_SCRIPT" ]; then
+    bash "$PREFLIGHT_SCRIPT"
+    EXIT_CODE=$?
+    
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo -e "\n${YELLOW}Push cancelled due to preflight failures.${NC}"
+        echo -e "${YELLOW}To bypass (not recommended): git push --no-verify${NC}"
+        exit $EXIT_CODE
+    fi
+else
+    echo "Warning: Preflight script not found at $PREFLIGHT_SCRIPT"
+    echo "Continuing with push..."
+fi
+
+exit 0
