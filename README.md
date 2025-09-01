@@ -1,5 +1,10 @@
 # 🌱 Fidan - Plant Trees While You Focus
 
+[![License: Hippocratic 3.0](https://img.shields.io/badge/License-Hippocratic%203.0-lightgrey.svg)](https://github.com/erdalgunes/fidan/blob/main/LICENSE)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/erdalgunes?style=social)](https://github.com/sponsors/erdalgunes)
+[![Contributors Welcome](https://img.shields.io/badge/contributors-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Code of Conduct](https://img.shields.io/badge/code%20of-conduct-blue.svg)](CODE_OF_CONDUCT.md)
+
 > **Fidan** (Turkish for "sapling" or "young tree") is an open-source Pomodoro timer that helps you stay focused while growing a virtual forest. Every sponsorship plants real trees through environmental initiatives.
 
 ## 🌳 Mission
@@ -70,11 +75,28 @@ fidan/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+We love contributions! Fidan is built by the community, for the community.
+
+Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started. Whether you're fixing bugs, adding features, improving documentation, or translating the app, every contribution helps plant more trees!
+
+### Quick Start for Contributors
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+Check our [issues page](https://github.com/erdalgunes/fidan/issues) for good first issues!
 
 ## 📄 License
 
-This project will be licensed under the MIT License - see the LICENSE file for details (to be added).
+This project is licensed under the [Hippocratic License 3.0](LICENSE) - an ethical open source license that ensures the software is used for good. The license prohibits use for:
+- Mass surveillance
+- Military or weapons development  
+- Human rights violations
+- Environmental harm
+
+We believe technology should be a force for positive change.
 
 ## 🙏 Acknowledgments
 
