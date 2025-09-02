@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fidan</string>
+    <string name="timer_start">Start Focus Session</string>
+    <string name="timer_pause">Pause</string>
+    <string name="timer_reset">Reset</string>
+    <string name="timer_complete">Session Complete!</string>
+    <string name="tree_grown">Great job! Your tree has grown!</string>
+    <string name="notification_channel_name">Timer Notifications</string>
+    <string name="notification_channel_description">Notifications for timer completion</string>
+</resources>
