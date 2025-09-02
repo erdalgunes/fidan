@@ -7,18 +7,25 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fidan.timer.service.TimerService
 import com.fidan.timer.ui.TimerScreen
 import com.fidan.timer.ui.theme.FidanTheme
+import com.fidan.timer.utils.TimerPreferences
 import com.fidan.timer.viewmodel.TimerViewModel
+import com.fidan.timer.viewmodel.TimerEvent
 
 class MainActivity : ComponentActivity() {
     private lateinit var timerViewModel: TimerViewModel
+    private lateinit var timerPreferences: TimerPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        timerPreferences = TimerPreferences.getInstance(this)
         
         setContent {
             FidanTheme {
@@ -27,6 +34,18 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     timerViewModel = viewModel()
+                    val timerEvents by timerViewModel.timerEvents.collectAsState()
+                    
+                    // Handle timer completion for service notification
+                    when (timerEvents) {
+                        is TimerEvent.SessionCompleted -> {
+                            triggerTimerComplete()
+                            timerPreferences.recordCompletedSession()
+                            timerPreferences.clearSessionStartTime()
+                        }
+                        else -> {}
+                    }
+                    
                     TimerScreen(timerViewModel = timerViewModel)
                 }
             }
@@ -37,8 +56,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun restoreTimerIfNeeded() {
-        val prefs = getSharedPreferences("timer_prefs", MODE_PRIVATE)
-        val sessionStartTime = prefs.getLong("session_start_time", 0)
+        val sessionStartTime = timerPreferences.getSessionStartTime()
         
         if (sessionStartTime > 0) {
             timerViewModel.restoreTimer(sessionStartTime)
@@ -49,10 +67,7 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         // Store session start time for recovery
         if (timerViewModel.timerState.value.isRunning) {
-            val prefs = getSharedPreferences("timer_prefs", MODE_PRIVATE)
-            prefs.edit()
-                .putLong("session_start_time", timerViewModel.getSessionStartTime())
-                .apply()
+            timerPreferences.saveSessionStartTime(timerViewModel.getSessionStartTime())
         }
     }
 
@@ -60,12 +75,11 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // Clear stored session if timer is not running
         if (!timerViewModel.timerState.value.isRunning) {
-            val prefs = getSharedPreferences("timer_prefs", MODE_PRIVATE)
-            prefs.edit().remove("session_start_time").apply()
+            timerPreferences.clearSessionStartTime()
         }
     }
 
-    fun triggerTimerComplete() {
+    private fun triggerTimerComplete() {
         val intent = Intent(this, TimerService::class.java).apply {
             action = TimerService.ACTION_TIMER_COMPLETE
         }

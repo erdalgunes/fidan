@@ -12,99 +12,184 @@ data class TimerState(
     val timeLeftMillis: Long = TIMER_DURATION,
     val isRunning: Boolean = false,
     val isCompleted: Boolean = false,
+    val isPaused: Boolean = false,
     val progress: Float = 0f,
-    val displayTime: String = "25:00"
+    val displayTime: String = "25:00",
+    val sessionProgress: Int = 0,
+    val totalSessions: Int = 1
 )
+
+sealed class TimerEvent {
+    object SessionCompleted : TimerEvent()
+    object SessionStarted : TimerEvent()
+    object SessionPaused : TimerEvent()
+    object SessionResumed : TimerEvent()
+    object SessionReset : TimerEvent()
+    data class Error(val message: String) : TimerEvent()
+}
 
 class TimerViewModel : ViewModel() {
     companion object {
         const val TIMER_DURATION = 25 * 60 * 1000L // 25 minutes in milliseconds
         const val TICK_INTERVAL = 1000L // Update every second
+        private const val TAG = "TimerViewModel"
     }
 
     private val _timerState = MutableStateFlow(TimerState())
     val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
 
+    private val _timerEvents = MutableStateFlow<TimerEvent?>(null)
+    val timerEvents: StateFlow<TimerEvent?> = _timerEvents.asStateFlow()
+
     private var countDownTimer: CountDownTimer? = null
     private var sessionStartTime: Long = 0
+    private var isPaused: Boolean = false
 
     fun startTimer() {
-        if (_timerState.value.isRunning) return
+        val currentState = _timerState.value
+        if (currentState.isRunning) {
+            emitEvent(TimerEvent.Error("Timer is already running"))
+            return
+        }
 
-        sessionStartTime = System.currentTimeMillis()
-        
-        countDownTimer = object : CountDownTimer(_timerState.value.timeLeftMillis, TICK_INTERVAL) {
-            override fun onTick(millisUntilFinished: Long) {
-                updateTimerState(millisUntilFinished, true)
+        try {
+            if (!isPaused) {
+                sessionStartTime = System.currentTimeMillis()
             }
-
-            override fun onFinish() {
-                viewModelScope.launch {
-                    _timerState.value = TimerState(
-                        timeLeftMillis = 0,
-                        isRunning = false,
-                        isCompleted = true,
-                        progress = 1f,
-                        displayTime = "00:00"
-                    )
+            isPaused = false
+            
+            countDownTimer = object : CountDownTimer(currentState.timeLeftMillis, TICK_INTERVAL) {
+                override fun onTick(millisUntilFinished: Long) {
+                    updateTimerState(millisUntilFinished, true, false)
                 }
-            }
-        }.start()
 
-        _timerState.value = _timerState.value.copy(isRunning = true, isCompleted = false)
+                override fun onFinish() {
+                    viewModelScope.launch {
+                        _timerState.value = currentState.copy(
+                            timeLeftMillis = 0,
+                            isRunning = false,
+                            isCompleted = true,
+                            isPaused = false,
+                            progress = 1f,
+                            displayTime = "00:00"
+                        )
+                        emitEvent(TimerEvent.SessionCompleted)
+                    }
+                }
+            }.start()
+
+            _timerState.value = currentState.copy(
+                isRunning = true, 
+                isCompleted = false, 
+                isPaused = false
+            )
+            emitEvent(if (currentState.isPaused) TimerEvent.SessionResumed else TimerEvent.SessionStarted)
+        } catch (e: Exception) {
+            emitEvent(TimerEvent.Error("Failed to start timer: ${e.message}"))
+        }
     }
 
     fun pauseTimer() {
-        countDownTimer?.cancel()
-        countDownTimer = null
-        _timerState.value = _timerState.value.copy(isRunning = false)
+        try {
+            countDownTimer?.cancel()
+            countDownTimer = null
+            isPaused = true
+            _timerState.value = _timerState.value.copy(
+                isRunning = false,
+                isPaused = true
+            )
+            emitEvent(TimerEvent.SessionPaused)
+        } catch (e: Exception) {
+            emitEvent(TimerEvent.Error("Failed to pause timer: ${e.message}"))
+        }
     }
 
     fun resetTimer() {
-        countDownTimer?.cancel()
-        countDownTimer = null
-        _timerState.value = TimerState()
+        try {
+            countDownTimer?.cancel()
+            countDownTimer = null
+            isPaused = false
+            sessionStartTime = 0
+            _timerState.value = TimerState()
+            emitEvent(TimerEvent.SessionReset)
+        } catch (e: Exception) {
+            emitEvent(TimerEvent.Error("Failed to reset timer: ${e.message}"))
+        }
     }
 
-    private fun updateTimerState(millisLeft: Long, isRunning: Boolean) {
-        val progress = 1f - (millisLeft.toFloat() / TIMER_DURATION)
-        val minutes = (millisLeft / 1000) / 60
-        val seconds = (millisLeft / 1000) % 60
-        val displayTime = String.format("%02d:%02d", minutes, seconds)
+    private fun updateTimerState(millisLeft: Long, isRunning: Boolean, isPaused: Boolean) {
+        try {
+            val progress = 1f - (millisLeft.toFloat() / TIMER_DURATION)
+            val minutes = (millisLeft / 1000) / 60
+            val seconds = (millisLeft / 1000) % 60
+            val displayTime = String.format("%02d:%02d", minutes, seconds)
 
-        viewModelScope.launch {
-            _timerState.value = _timerState.value.copy(
-                timeLeftMillis = millisLeft,
-                isRunning = isRunning,
-                progress = progress,
-                displayTime = displayTime
-            )
+            viewModelScope.launch {
+                _timerState.value = _timerState.value.copy(
+                    timeLeftMillis = millisLeft,
+                    isRunning = isRunning,
+                    isPaused = isPaused,
+                    progress = progress.coerceIn(0f, 1f),
+                    displayTime = displayTime
+                )
+            }
+        } catch (e: Exception) {
+            emitEvent(TimerEvent.Error("Failed to update timer state: ${e.message}"))
         }
     }
 
     fun getSessionStartTime(): Long = sessionStartTime
 
     fun restoreTimer(storedStartTime: Long) {
-        val elapsedTime = System.currentTimeMillis() - storedStartTime
-        val remainingTime = TIMER_DURATION - elapsedTime
-        
-        if (remainingTime > 0) {
-            // Set the time remaining and start immediately to maintain consistency
-            _timerState.value = _timerState.value.copy(timeLeftMillis = remainingTime)
-            startTimer()
-        } else {
-            _timerState.value = TimerState(
-                timeLeftMillis = 0,
-                isRunning = false,
-                isCompleted = true,
-                progress = 1f,
-                displayTime = "00:00"
-            )
+        try {
+            if (storedStartTime <= 0) {
+                emitEvent(TimerEvent.Error("Invalid session start time"))
+                return
+            }
+
+            val elapsedTime = System.currentTimeMillis() - storedStartTime
+            val remainingTime = (TIMER_DURATION - elapsedTime).coerceAtLeast(0)
+            
+            if (remainingTime > 0) {
+                sessionStartTime = storedStartTime
+                isPaused = true
+                _timerState.value = _timerState.value.copy(
+                    timeLeftMillis = remainingTime,
+                    isPaused = true
+                )
+                startTimer()
+            } else {
+                _timerState.value = TimerState(
+                    timeLeftMillis = 0,
+                    isRunning = false,
+                    isCompleted = true,
+                    progress = 1f,
+                    displayTime = "00:00"
+                )
+                emitEvent(TimerEvent.SessionCompleted)
+            }
+        } catch (e: Exception) {
+            emitEvent(TimerEvent.Error("Failed to restore timer: ${e.message}"))
         }
+    }
+
+    private fun emitEvent(event: TimerEvent) {
+        viewModelScope.launch {
+            _timerEvents.value = event
+        }
+    }
+
+    fun clearEvent() {
+        _timerEvents.value = null
     }
 
     override fun onCleared() {
         super.onCleared()
-        countDownTimer?.cancel()
+        try {
+            countDownTimer?.cancel()
+            countDownTimer = null
+        } catch (e: Exception) {
+            // Silent cleanup - logging would be appropriate here
+        }
     }
 }

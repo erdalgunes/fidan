@@ -13,7 +13,9 @@ import android.os.Build
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.fidan.timer.MainActivity
 import com.fidan.timer.R
 
@@ -22,6 +24,7 @@ class TimerService : Service() {
         const val CHANNEL_ID = "TimerServiceChannel"
         const val NOTIFICATION_ID = 1
         const val ACTION_TIMER_COMPLETE = "com.fidan.timer.TIMER_COMPLETE"
+        private const val TAG = "TimerService"
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -50,35 +53,63 @@ class TimerService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "Timer Service Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
+                getString(R.string.notification_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = getString(R.string.notification_channel_description)
+                enableVibration(true)
+                enableLights(true)
+                setShowBadge(true)
+            }
+            
             val manager = getSystemService(NotificationManager::class.java)
             manager?.createNotificationChannel(serviceChannel)
         }
     }
 
     private fun showTimerCompleteNotification() {
-        val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        try {
+            val notificationIntent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            
+            val pendingIntent = PendingIntent.getActivity(
+                this, 0, notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Focus Session Complete!")
-            .setContentText("Great job! Your tree has grown 🌳")
-            .setSmallIcon(R.drawable.ic_tree)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
+            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle(getString(R.string.timer_complete))
+                .setContentText(getString(R.string.tree_grown))
+                .setSmallIcon(R.drawable.ic_tree)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .addAction(
+                    R.drawable.ic_tree,
+                    "Start New Session",
+                    pendingIntent
+                )
+                .build()
 
-        startForeground(NOTIFICATION_ID, notification)
-        
-        // Stop foreground service after showing notification
-        stopForeground(false)
-        stopSelf()
+            if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+                startForeground(NOTIFICATION_ID, notification)
+                
+                // Auto-dismiss after 10 seconds
+                android.os.Handler(mainLooper).postDelayed({
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                }, 10000)
+            } else {
+                // Fallback if notifications are disabled
+                stopSelf()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Failed to show notification", e)
+            stopSelf()
+        }
     }
 
     private fun playCompletionSound() {
@@ -110,19 +141,27 @@ class TimerService : Service() {
 
     private fun vibrateDevice() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(
-                    VibrationEffect.createWaveform(
-                        longArrayOf(0, 200, 100, 200, 100, 200),
-                        -1
-                    )
-                )
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator
             } else {
                 @Suppress("DEPRECATION")
-                vibrator?.vibrate(longArrayOf(0, 200, 100, 200, 100, 200), -1)
+                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+            
+            if (vibrator.hasVibrator()) {
+                val pattern = longArrayOf(0, 300, 150, 300, 150, 500)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(
+                        VibrationEffect.createWaveform(pattern, -1)
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(pattern, -1)
+                }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e(TAG, "Failed to vibrate device", e)
         }
     }
 
