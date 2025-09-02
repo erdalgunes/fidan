@@ -89,7 +89,8 @@ class TimerViewModel : ViewModel() {
         val remainingTime = TIMER_DURATION - elapsedTime
         
         if (remainingTime > 0) {
-            updateTimerState(remainingTime, false)
+            // Set the time remaining and start immediately to maintain consistency
+            _timerState.value = _timerState.value.copy(timeLeftMillis = remainingTime)
             startTimer()
         } else {
             _timerState.value = TimerState(

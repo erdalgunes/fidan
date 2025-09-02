@@ -83,6 +83,11 @@ class TimerService : Service() {
 
     private fun playCompletionSound() {
         try {
+            // Use system notification sound as fallback if custom sound not available
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.playSoundEffect(AudioManager.FX_KEY_CLICK)
+            
+            // Try to play custom sound if available
             mediaPlayer = MediaPlayer.create(this, R.raw.completion_chime)
             mediaPlayer?.let { player ->
                 player.setAudioAttributes(
@@ -98,7 +103,7 @@ class TimerService : Service() {
                 player.start()
             }
         } catch (e: Exception) {
-            // Handle cases where sound file doesn't exist or can't be played
+            // Gracefully handle missing sound resources
             e.printStackTrace()
         }
     }

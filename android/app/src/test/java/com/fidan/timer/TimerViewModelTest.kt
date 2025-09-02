@@ -3,11 +3,22 @@ package com.fidan.timer
 import com.fidan.timer.viewmodel.TimerViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.Dispatchers
 import org.junit.Test
 import org.junit.Assert.*
+import org.junit.Before
 
 @ExperimentalCoroutinesApi
 class TimerViewModelTest {
+    private val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+    }
 
     @Test
     fun initialState_isCorrect() {
@@ -22,12 +33,12 @@ class TimerViewModelTest {
     }
 
     @Test
-    fun resetTimer_resetsToInitialState() {
+    fun resetTimer_resetsToInitialState() = runTest {
         val viewModel = TimerViewModel()
         
         // Simulate some progress
         viewModel.startTimer()
-        Thread.sleep(100) // Let timer run briefly
+        testDispatcher.scheduler.advanceTimeBy(1000) // Advance by 1 second
         viewModel.pauseTimer()
         
         // Reset

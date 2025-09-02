@@ -67,6 +67,7 @@ fun TimerScreen(
         TimerControls(
             isRunning = timerState.isRunning,
             isCompleted = timerState.isCompleted,
+            progress = timerState.progress,
             onStart = { timerViewModel.startTimer() },
             onPause = { timerViewModel.pauseTimer() },
             onReset = { timerViewModel.resetTimer() }
@@ -181,6 +182,7 @@ fun DrawScope.drawTree(progress: Float) {
 fun TimerControls(
     isRunning: Boolean,
     isCompleted: Boolean,
+    progress: Float,
     onStart: () -> Unit,
     onPause: () -> Unit,
     onReset: () -> Unit
@@ -225,7 +227,7 @@ fun TimerControls(
             }
         }
         
-        if (isCompleted || (isRunning || (!isRunning && timerState.progress > 0))) {
+        if (isCompleted || (isRunning || (!isRunning && progress > 0))) {
             // Reset button
             OutlinedButton(
                 onClick = onReset,
