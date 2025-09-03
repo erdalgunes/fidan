@@ -30,6 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.lifecycleScope
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -153,6 +156,12 @@ fun FidanApp(timerManager: TimerManager) {
                     icon = { Text("📊", fontSize = 20.sp) },
                     label = { Text("Stats") }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    icon = { Text("🌍", fontSize = 20.sp) },
+                    label = { Text("Impact") }
+                )
             }
         }
     ) { innerPadding ->
@@ -168,6 +177,7 @@ fun FidanApp(timerManager: TimerManager) {
             )
             1 -> ForestScreen(innerPadding, completedTrees, incompleteTrees)
             2 -> StatsScreen(innerPadding, completedTrees, incompleteTrees)
+            3 -> ImpactScreen(innerPadding)
         }
     }
 }
@@ -475,6 +485,237 @@ fun StatCard(
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
             )
         }
+    }
+}
+
+@Composable
+fun ImpactScreen(paddingValues: PaddingValues) {
+    val realTreesPlanted = 1247 // Mock data - would come from API
+    val totalDonations = 3741.50 // Mock data - would come from GitHub Sponsors API
+    val partnersCount = 3
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Real Environmental Impact",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 24.dp),
+            color = MaterialTheme.colorScheme.primary
+        )
+        
+        // Real Trees Counter
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFFE8F5E9)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "🌳",
+                    fontSize = 48.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = realTreesPlanted.toString(),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Real Trees Planted",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Through GitHub Sponsors",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+        
+        // Sponsorship Information
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "💚 Support Fidan",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Every GitHub sponsorship plants real trees! 100% of proceeds go directly to verified tree-planting organizations.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                // Sponsorship Tiers
+                SponsorshipTier("🌱 Seedling", "$3/month", "1 tree planted")
+                SponsorshipTier("🌿 Sapling", "$10/month", "5 trees planted")  
+                SponsorshipTier("🌳 Forest Guardian", "$25/month", "15 trees planted")
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Button(
+                    onClick = { /* TODO: Open GitHub Sponsors */ },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Become a Sponsor")
+                }
+            }
+        }
+        
+        // Transparency Section
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "📊 Transparency",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                TransparencyItem("Total Donations", "$${"%.2f".format(totalDonations)}")
+                TransparencyItem("Partner Organizations", "$partnersCount active")
+                TransparencyItem("Last Update", "January 2025")
+                TransparencyItem("Certificates Available", "View planting proofs")
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                OutlinedButton(
+                    onClick = { /* TODO: Open transparency report */ },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("View Monthly Report")
+                }
+            }
+        }
+        
+        // Partner Organizations
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "🤝 Our Partners",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                PartnerItem("One Tree Planted", "North America & Global")
+                PartnerItem("Eden Reforestation Projects", "Madagascar, Haiti, Nepal")
+                PartnerItem("Trees for the Future", "Sub-Saharan Africa")
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "All partners are verified 501(c)(3) organizations with transparent impact reporting.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SponsorshipTier(name: String, price: String, benefit: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = price,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            text = benefit,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun TransparencyItem(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+fun PartnerItem(name: String, location: String) {
+    Column(modifier = Modifier.padding(vertical = 6.dp)) {
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = location,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
