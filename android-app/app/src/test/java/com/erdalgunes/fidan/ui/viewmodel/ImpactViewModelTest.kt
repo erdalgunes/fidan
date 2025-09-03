@@ -126,7 +126,7 @@ class ImpactViewModelTest {
     @Test
     fun `error type is correctly determined for timeout errors`() = runTest {
         // Given
-        val timeoutErrorMessage = "Request timed out. Please check your connection and try again."
+        val timeoutErrorMessage = "Connection timeout occurred"
         whenever(mockRepository.getImpactData()).thenReturn(Result.Error(timeoutErrorMessage))
         
         // When

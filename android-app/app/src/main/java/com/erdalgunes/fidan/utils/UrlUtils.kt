@@ -10,6 +10,11 @@ object UrlUtils {
     
     fun isValidUrl(url: String): Boolean {
         return try {
+            // Check for invalid characters like spaces
+            if (url.contains(' ') || url.contains('\t') || url.contains('\n')) {
+                return false
+            }
+            
             val uri = Uri.parse(url)
             uri.scheme in listOf("http", "https") && !uri.host.isNullOrEmpty()
         } catch (e: Exception) {

@@ -22,12 +22,13 @@ import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.screens.*
 import com.erdalgunes.fidan.ui.theme.FidanTheme
 import com.erdalgunes.fidan.data.SessionData
-import com.erdalgunes.fidan.forest.ForestManager
+import com.erdalgunes.fidan.service.TimerService
+import com.erdalgunes.fidan.service.ForestService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class CircuitMainActivity : ComponentActivity(), TimerCallback {
+class CircuitMainActivity : ComponentActivity() {
     
     @Inject
     lateinit var presenterFactories: @JvmSuppressWildcards Set<Presenter.Factory>
@@ -35,20 +36,46 @@ class CircuitMainActivity : ComponentActivity(), TimerCallback {
     @Inject
     lateinit var uiFactories: @JvmSuppressWildcards Set<Ui.Factory>
     
-    private lateinit var timerManager: TimerManager
-    private lateinit var forestManager: ForestManager
+    @Inject
+    lateinit var timerService: TimerService
+    
+    @Inject
+    lateinit var forestService: ForestService
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        timerManager = TimerManager(this, lifecycleScope)
-        forestManager = ForestManager(this)
-        
         val circuit = Circuit.Builder()
             .addPresenterFactories(presenterFactories)
             .addUiFactories(uiFactories)
             .build()
+        
+        // Observe timer completion to add trees
+        lifecycleScope.launchWhenStarted {
+            timerService.state.collect { timerState ->
+                if (timerState.sessionCompleted) {
+                    val sessionData = SessionData(
+                        taskName = "Focus Session",
+                        durationMillis = 25 * 60 * 1000L,
+                        completedDate = java.util.Date(),
+                        wasCompleted = true
+                    )
+                    forestService.addTree(sessionData)
+                    timerService.resetTimer()
+                }
+                
+                if (timerState.treeWithering && !timerState.isRunning) {
+                    val sessionData = SessionData(
+                        taskName = "Focus Session (Stopped)",
+                        durationMillis = timerService.getTimeElapsed(),
+                        completedDate = java.util.Date(),
+                        wasCompleted = false
+                    )
+                    forestService.addTree(sessionData)
+                }
+            }
+        }
         
         setContent {
             FidanTheme {
@@ -59,41 +86,9 @@ class CircuitMainActivity : ComponentActivity(), TimerCallback {
         }
     }
     
-    override fun onPause() {
-        super.onPause()
-        timerManager.onAppPaused()
-    }
-    
-    override fun onResume() {
-        super.onResume()
-        timerManager.onAppResumed()
-    }
-    
-    override fun onSessionCompleted() {
-        val sessionData = SessionData(
-            taskName = "Focus Session",
-            durationMillis = 25 * 60 * 1000L,
-            completedDate = java.util.Date(),
-            wasCompleted = true
-        )
-        forestManager.addTree(sessionData)
-    }
-    
-    override fun onSessionStopped(wasRunning: Boolean, timeElapsed: Long) {
-        if (wasRunning && timeElapsed > 0) {
-            val sessionData = SessionData(
-                taskName = "Focus Session (Stopped)",
-                durationMillis = timeElapsed,
-                completedDate = java.util.Date(),
-                wasCompleted = false
-            )
-            forestManager.addTree(sessionData)
-        }
-    }
-    
     override fun onDestroy() {
         super.onDestroy()
-        timerManager.cleanup()
+        timerService.cleanup()
     }
 }
 

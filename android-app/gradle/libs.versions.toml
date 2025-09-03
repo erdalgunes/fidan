@@ -1,16 +1,16 @@
 [versions]
-androidGradlePlugin = "8.2.0"
+androidGradlePlugin = "8.6.0"
 androidxActivity = "1.8.0"
-androidxComposeBom = "2023.10.01"
+androidxComposeBom = "2023.08.00"
 androidxCore = "1.12.0"
 androidxDataStore = "1.0.0"
 androidxLifecycle = "2.6.2"
 androidxRoom = "2.6.0"
-circuit = "0.30.0"
+circuit = "0.23.0"
 coroutines = "1.7.3"
 hilt = "2.48.1"
-kotlin = "1.9.20"
-ksp = "1.9.20-1.0.14"
+kotlin = "2.0.0"
+ksp = "2.0.0-1.0.21"
 accompanist = "0.32.0"
 
 [libraries]
@@ -63,6 +63,7 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "androidxRoom" }
 

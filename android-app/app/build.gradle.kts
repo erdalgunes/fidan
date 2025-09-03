@@ -2,18 +2,19 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
-    kotlin("plugin.serialization") version "1.9.20"
-    id("kotlin-kapt")
+    alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "2.0.0"
+    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
 
 android {
     namespace = "com.erdalgunes.fidan"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         applicationId = "com.erdalgunes.fidan"
         versionCode = 1
         versionName = "1.0.0"
@@ -44,10 +45,6 @@ android {
         compose = true
     }
     
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.5"
-    }
-    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -71,7 +68,7 @@ dependencies {
     
     // Hilt for dependency injection
     implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
     
     // Core Android
     implementation(libs.androidx.core.ktx)
@@ -86,7 +83,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.iconsExtended)
     implementation(libs.androidx.lifecycle.runtimeCompose)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")

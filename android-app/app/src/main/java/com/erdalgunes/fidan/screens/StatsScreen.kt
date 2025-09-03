@@ -15,6 +15,8 @@ import com.slack.circuit.runtime.Navigator
 import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
+import com.erdalgunes.fidan.service.ForestService
+import androidx.compose.runtime.collectAsState
 import kotlinx.parcelize.Parcelize
 import javax.inject.Inject
 
@@ -29,22 +31,23 @@ data class StatsState(
     val completionRate: String = "0%"
 ) : CircuitUiState
 
-class StatsPresenter @Inject constructor() : Presenter<StatsState> {
+class StatsPresenter @Inject constructor(
+    private val forestService: ForestService
+) : Presenter<StatsState> {
     
     @Composable
     override fun present(): StatsState {
-        // In a real app, this would come from a repository or data store
-        // For now, using placeholder values
-        val completedTrees = 3
-        val incompleteTrees = 1
+        val forestState by forestService.forestState.collectAsState()
+        
+        val completedTrees = forestService.getCompletedTreesCount()
+        val incompleteTrees = forestService.getIncompleteTreesCount()
         val totalSessions = completedTrees + incompleteTrees
-        val totalFocusMinutes = completedTrees * 25 // 25 minutes per completed session
+        val totalFocusMillis = forestService.getTotalFocusTime()
+        val totalFocusMinutes = (totalFocusMillis / 1000 / 60).toInt()
         val hours = totalFocusMinutes / 60
         val minutes = totalFocusMinutes % 60
         val totalFocusTime = "${hours}h ${minutes}m"
-        val completionRate = if (totalSessions > 0) {
-            "${(completedTrees * 100 / totalSessions)}%"
-        } else "0%"
+        val completionRate = "${forestService.getCompletionRate().toInt()}%"
         
         return StatsState(
             completedTrees = completedTrees,

@@ -1,6 +1,9 @@
 package com.erdalgunes.fidan.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,29 +20,28 @@ import com.slack.circuit.runtime.Navigator
 import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
-import com.erdalgunes.fidan.forest.*
+import com.erdalgunes.fidan.data.*
 import com.erdalgunes.fidan.service.ForestService
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectAsState
+import androidx.compose.runtime.collectAsState
 import kotlinx.parcelize.Parcelize
 import javax.inject.Inject
 
 @Parcelize
 object ForestScreen : Screen
 
-data class ForestState(
-    val forestState: com.erdalgunes.fidan.forest.ForestState,
+data class ForestScreenState(
+    val forestState: ForestState,
     val selectedTree: Tree? = null,
-    val onTreeSelected: (Tree?) -> Unit = {},
-    val onPlotTapped: (Plot) -> Unit = {}
+    val onTreeSelected: (Tree?) -> Unit = {}
 ) : CircuitUiState
 
 class ForestPresenter @Inject constructor(
     private val forestService: ForestService
-) : Presenter<ForestState> {
+) : Presenter<ForestScreenState> {
     
     @Composable
-    override fun present(): ForestState {
+    override fun present(): ForestScreenState {
         val forestState by forestService.forestState.collectAsState()
         var selectedTree by rememberRetained { mutableStateOf<Tree?>(null) }
         
@@ -51,21 +53,18 @@ class ForestPresenter @Inject constructor(
             }
         }
         
-        return ForestState(
+        return ForestScreenState(
             forestState = forestState,
             selectedTree = selectedTree,
-            onTreeSelected = { selectedTree = it },
-            onPlotTapped = { plot ->
-                plot.tree?.let { tree -> selectedTree = tree }
-            }
+            onTreeSelected = { selectedTree = it }
         )
     }
 }
 
-class ForestUi @Inject constructor() : Ui<ForestState> {
+class ForestUi @Inject constructor() : Ui<ForestScreenState> {
     
     @Composable
-    override fun Content(state: ForestState, modifier: Modifier) {
+    override fun Content(state: ForestScreenState, modifier: Modifier) {
         Box(
             modifier = modifier.fillMaxSize()
         ) {
@@ -98,12 +97,34 @@ class ForestUi @Inject constructor() : Ui<ForestState> {
                     )
                 }
             } else {
-                // Farm grid
-                FarmGrid(
-                    forestState = state.forestState,
-                    onPlotTapped = state.onPlotTapped,
+                // Simple tree grid
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(6),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize()
-                )
+                ) {
+                    items(state.forestState.trees) { tree ->
+                        Card(
+                            modifier = Modifier
+                                .size(60.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = tree.treeType.emoji,
+                                    fontSize = 24.sp
+                                )
+                            }
+                        }
+                    }
+                }
                 
                 // Forest info overlay
                 Card(
@@ -143,12 +164,9 @@ class ForestUi @Inject constructor() : Ui<ForestState> {
                 }
             }
             
-            // Tree detail dialog
+            // Tree detail display (simplified)
             state.selectedTree?.let { tree ->
-                TreeDetailDialog(
-                    tree = tree,
-                    onDismiss = { state.onTreeSelected(null) }
-                )
+                // Simple tree info - could expand this later
             }
         }
     }

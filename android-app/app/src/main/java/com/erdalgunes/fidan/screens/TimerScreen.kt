@@ -26,7 +26,7 @@ import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.service.TimerService
-import kotlinx.coroutines.flow.collectAsState
+import androidx.compose.runtime.collectAsState
 import kotlinx.parcelize.Parcelize
 import javax.inject.Inject
 
@@ -159,7 +159,7 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
                 }
             } else {
                 FloatingActionButton(
-                    onClick = { /* Reset for new session */ },
+                    onClick = state.onStartStop,
                     modifier = Modifier.size(72.dp),
                     containerColor = MaterialTheme.colorScheme.secondary
                 ) {

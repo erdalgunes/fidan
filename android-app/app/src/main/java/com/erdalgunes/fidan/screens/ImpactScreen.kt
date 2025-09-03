@@ -57,25 +57,23 @@ class ImpactPresenter @Inject constructor(
         var state by rememberRetained { mutableStateOf<ImpactState>(ImpactState.Loading) }
         val scope = rememberCoroutineScope()
         
-        val loadData = remember {
-            {
-                scope.launch {
-                    state = ImpactState.Loading
-                    when (val result = repository.getImpactData()) {
-                        is Result.Success -> {
-                            state = ImpactState.Success(result.data)
+        fun loadData() {
+            scope.launch {
+                state = ImpactState.Loading
+                when (val result = repository.getImpactData()) {
+                    is Result.Success -> {
+                        state = ImpactState.Success(result.data)
+                    }
+                    is Result.Error -> {
+                        val errorType = when {
+                            result.message.contains("timeout", ignoreCase = true) -> ErrorType.TIMEOUT
+                            result.message.contains("network", ignoreCase = true) -> ErrorType.NETWORK
+                            else -> ErrorType.GENERIC
                         }
-                        is Result.Error -> {
-                            val errorType = when {
-                                result.message.contains("timeout", ignoreCase = true) -> ErrorType.TIMEOUT
-                                result.message.contains("network", ignoreCase = true) -> ErrorType.NETWORK
-                                else -> ErrorType.GENERIC
-                            }
-                            state = ImpactState.Error(result.message, errorType) { loadData() }
-                        }
-                        is Result.Loading -> {
-                            state = ImpactState.Loading
-                        }
+                        state = ImpactState.Error(result.message, errorType) { loadData() }
+                    }
+                    is Result.Loading -> {
+                        state = ImpactState.Loading
                     }
                 }
             }
