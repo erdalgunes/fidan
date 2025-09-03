@@ -13,8 +13,8 @@ class FidanDelegate extends WatchUi.BehaviorDelegate {
 
     function onSelect() {
         if (_sessionManager.isActive()) {
-            // Show confirmation dialog to stop session
-            var dialog = new WatchUi.Confirmation("Stop focus session?");
+            // Show confirmation dialog to cancel session (no pause allowed)
+            var dialog = new WatchUi.Confirmation("Cancel session?\n(No credit given)");
             WatchUi.pushView(dialog, new StopConfirmationDelegate(_sessionManager), WatchUi.SLIDE_IMMEDIATE);
         } else {
             // Start new session

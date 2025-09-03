@@ -68,17 +68,12 @@ class SessionManager {
             _timer = null;
         }
         
-        // Save completed session
-        var completedSession = {
-            "startTime" => _startTime.value(),
-            "duration" => SESSION_DURATION - _remainingTime,
-            "completed" => _remainingTime <= 0
-        };
-        saveSessionToHistory(completedSession);
+        // Session cancelled - no credit given (strict Pomodoro)
+        // Only completed sessions (timer reaches 0) count
         
-        // Vibrate pattern for stop (if enabled)
+        // Short vibration for cancellation (if enabled)
         if (Properties.getValue("vibrationEnabled") != false && Attention has :vibrate) {
-            var vibePattern = [new Attention.VibeProfile(100, 500)];
+            var vibePattern = [new Attention.VibeProfile(50, 200)];
             Attention.vibrate(vibePattern);
         }
         

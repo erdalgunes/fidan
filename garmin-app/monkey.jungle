@@ -1,0 +1,19 @@
+project.manifest = manifest.xml
+
+# Base configuration
+base.sourcePath = source
+base.resourcePath = resources
+base.excludeAnnotations = test;debug
+
+# Device configurations for popular models
+fenix7.sourcePath = source
+fenix7.resourcePath = resources
+
+fr965.sourcePath = source  
+fr965.resourcePath = resources
+
+venu3.sourcePath = source
+venu3.resourcePath = resources
+
+vivoactive5.sourcePath = source
+vivoactive5.resourcePath = resources
