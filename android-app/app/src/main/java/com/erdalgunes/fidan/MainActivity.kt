@@ -44,9 +44,6 @@ class MainActivity : ComponentActivity(), TimerCallback {
         timerManager = TimerManager(this, lifecycleScope)
         forestManager = ForestManager()
         
-        // Add some sample trees for demo
-        forestManager.addSampleTrees()
-        
         setContent {
             FidanTheme {
                 FidanApp(timerManager, forestManager)
