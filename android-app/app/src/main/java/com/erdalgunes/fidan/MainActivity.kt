@@ -355,12 +355,11 @@ fun NewForestScreen(
                 )
             }
         } else {
-            // Forest canvas
-            ForestCanvas(
+            // Farm grid
+            FarmGrid(
                 forestState = forestState,
-                onTreeTapped = { tree -> selectedTree = tree },
-                onPanAndZoom = { offsetX, offsetY, scale ->
-                    forestManager.updatePanAndZoom(offsetX, offsetY, scale)
+                onPlotTapped = { plot ->
+                    plot.tree?.let { tree -> selectedTree = tree }
                 },
                 modifier = Modifier.fillMaxSize()
             )

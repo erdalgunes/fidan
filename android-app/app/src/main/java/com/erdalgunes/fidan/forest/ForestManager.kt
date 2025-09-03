@@ -33,11 +33,11 @@ class ForestManager {
         updateForestState()
     }
     
-    fun getTreeAt(x: Float, y: Float, tolerance: Float = 50f): Tree? {
+    fun getTreeAtGridPosition(gridX: Int, gridY: Int): Tree? {
         return trees.find { tree ->
-            val dx = tree.x - x
-            val dy = tree.y - y
-            kotlin.math.sqrt(dx * dx + dy * dy) <= tolerance
+            val treeGridX = (tree.x / 100f).toInt()
+            val treeGridY = (tree.y / 100f).toInt()
+            treeGridX == gridX && treeGridY == gridY
         }
     }
     
@@ -60,29 +60,12 @@ class ForestManager {
     }
     
     private fun generateTreePosition(): Pair<Float, Float> {
-        // Generate positions in a natural, scattered pattern
-        // Using different areas based on number of existing trees
-        val areaSize = 1000f
-        val centerX = areaSize / 2
-        val centerY = areaSize / 2
+        // Grid-based positioning for farm-style layout
+        val treeIndex = trees.size
+        val gridX = (treeIndex % 6).toFloat() * 100f // 6 columns
+        val gridY = (treeIndex / 6).toFloat() * 100f
         
-        // Create clusters of trees with some randomness
-        val clusterRadius = 200f
-        val numClusters = (trees.size / 5) + 1
-        val clusterIndex = Random.nextInt(numClusters)
-        
-        val clusterAngle = (clusterIndex * 2 * kotlin.math.PI / numClusters).toFloat()
-        val clusterDistance = Random.nextFloat() * clusterRadius
-        
-        val clusterCenterX = centerX + kotlin.math.cos(clusterAngle) * clusterDistance
-        val clusterCenterY = centerY + kotlin.math.sin(clusterAngle) * clusterDistance
-        
-        // Add some randomness within the cluster
-        val randomOffset = 80f
-        val x = clusterCenterX + (Random.nextFloat() - 0.5f) * randomOffset
-        val y = clusterCenterY + (Random.nextFloat() - 0.5f) * randomOffset
-        
-        return Pair(x, y)
+        return Pair(gridX, gridY)
     }
     
     private fun updateForestState() {
