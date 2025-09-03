@@ -28,20 +28,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import android.util.Log
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.lifecycleScope
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), TimerCallback {
+    private lateinit var timerManager: TimerManager
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        timerManager = TimerManager(this, lifecycleScope)
+        
         setContent {
             FidanTheme {
-                FidanApp()
+                FidanApp(timerManager)
             }
         }
+    }
+    
+    override fun onSessionCompleted() {
+        // This will be handled in the Composable through state updates
+    }
+    
+    override fun onSessionStopped(wasRunning: Boolean, timeElapsed: Long) {
+        // This will be handled in the Composable through state updates
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        timerManager.cleanup()
     }
 }
 
@@ -68,37 +84,19 @@ fun FidanTheme(content: @Composable () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FidanApp() {
+fun FidanApp(timerManager: TimerManager) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var completedTrees by rememberSaveable { mutableIntStateOf(0) }
     var incompleteTrees by rememberSaveable { mutableIntStateOf(0) }
     
-    // Timer state persisted across tab changes
-    var isRunning by rememberSaveable { mutableStateOf(false) }
-    var timeLeftMillis by rememberSaveable { mutableLongStateOf(25 * 60 * 1000L) }
+    // Observe timer state from TimerManager
+    val timerState by timerManager.state.collectAsState()
     
-    // Timer countdown effect - runs at the app level so it persists across tab changes
-    LaunchedEffect(isRunning) {
-        Log.d("FidanTimer", "LaunchedEffect triggered, isRunning=$isRunning")
-        if (isRunning) {
-            while (isActive) {
-                Log.d("FidanTimer", "Timer loop iteration, time=$timeLeftMillis")
-                delay(1000)
-                if (timeLeftMillis > 0) {
-                    timeLeftMillis -= 1000
-                    Log.d("FidanTimer", "Timer tick: new time = $timeLeftMillis")
-                    if (timeLeftMillis <= 0) {
-                        isRunning = false
-                        completedTrees++
-                        timeLeftMillis = 25 * 60 * 1000L
-                        break
-                    }
-                } else {
-                    break
-                }
-            }
+    // Handle session completion and early stopping
+    LaunchedEffect(timerState.sessionCompleted, timerState.isRunning) {
+        if (timerState.sessionCompleted && !timerState.isRunning) {
+            completedTrees++
         }
-        Log.d("FidanTimer", "Timer loop exited")
     }
     
     Scaffold(
@@ -161,15 +159,11 @@ fun FidanApp() {
         when (selectedTab) {
             0 -> TimerScreen(
                 paddingValues = innerPadding,
-                timeLeftMillis = timeLeftMillis,
-                isRunning = isRunning,
-                onRunningChange = { isRunning = it },
+                timerManager = timerManager,
                 onSessionStopped = { 
-                    isRunning = false
-                    if (timeLeftMillis < 25 * 60 * 1000L) {
+                    if (timerState.timeLeftMillis < 25 * 60 * 1000L) {
                         incompleteTrees++
                     }
-                    timeLeftMillis = 25 * 60 * 1000L
                 }
             )
             1 -> ForestScreen(innerPadding, completedTrees, incompleteTrees)
@@ -181,22 +175,18 @@ fun FidanApp() {
 @Composable
 fun TimerScreen(
     paddingValues: PaddingValues,
-    timeLeftMillis: Long,
-    isRunning: Boolean,
-    onRunningChange: (Boolean) -> Unit,
+    timerManager: TimerManager,
     onSessionStopped: () -> Unit
 ) {
+    val timerState by timerManager.state.collectAsState()
+    
     val scale by animateFloatAsState(
-        targetValue = if (isRunning) 1.1f else 1f,
+        targetValue = if (timerState.isRunning) 1.1f else 1f,
         animationSpec = tween(300),
         label = "timer_scale"
     )
     
-    // Timer logic is now handled at the FidanApp level to persist across tabs
-    
-    val minutes = (timeLeftMillis / 1000) / 60
-    val seconds = (timeLeftMillis / 1000) % 60
-    val timeText = String.format("%02d:%02d", minutes, seconds)
+    val timeText = timerManager.getCurrentTimeText()
     
     Column(
         modifier = Modifier
@@ -243,9 +233,10 @@ fun TimerScreen(
         Row(
             horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            if (isRunning) {
+            if (timerState.isRunning) {
                 FloatingActionButton(
                     onClick = { 
+                        timerManager.stopTimer()
                         onSessionStopped()
                     },
                     modifier = Modifier.size(80.dp),
@@ -262,7 +253,7 @@ fun TimerScreen(
             } else {
                 FloatingActionButton(
                     onClick = { 
-                        onRunningChange(true)
+                        timerManager.startTimer()
                     },
                     modifier = Modifier.size(80.dp),
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -281,11 +272,7 @@ fun TimerScreen(
         Spacer(modifier = Modifier.height(20.dp))
         
         Text(
-            text = when {
-                isRunning -> "Focus on your task!"
-                timeLeftMillis <= 0 -> "Session complete!"
-                else -> "Ready to focus?"
-            },
+            text = timerManager.getStatusMessage(),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -495,6 +482,8 @@ fun StatCard(
 @Composable
 fun FidanAppPreview() {
     FidanTheme {
-        FidanApp()
+        // Preview with mock timer manager would need DI setup
+        // Commenting out for now
+        // FidanApp(timerManager)
     }
 }
