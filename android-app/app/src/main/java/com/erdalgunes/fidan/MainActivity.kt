@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.lifecycleScope
+import com.erdalgunes.fidan.ui.theme.FidanTheme
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -61,26 +62,6 @@ class MainActivity : ComponentActivity(), TimerCallback {
     }
 }
 
-@Composable
-fun FidanTheme(content: @Composable () -> Unit) {
-    val colorScheme = lightColorScheme(
-        primary = Color(0xFF4CAF50),
-        onPrimary = Color.White,
-        primaryContainer = Color(0xFF81C784),
-        secondary = Color(0xFF795548),
-        onSecondary = Color.White,
-        secondaryContainer = Color(0xFFA1887F),
-        background = Color(0xFFF5F5F5),
-        surface = Color.White,
-        onBackground = Color(0xFF1B5E20),
-        onSurface = Color(0xFF2E7D32)
-    )
-    
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
