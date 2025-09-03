@@ -51,6 +51,19 @@
     
     <!-- Loading and Error States -->
     <string name="loading">Loading…</string>
+    <string name="loading_impact_data">Loading impact data...</string>
     <string name="error_loading_data">Failed to load impact data</string>
+    <string name="unable_to_load_impact_data">Unable to load impact data</string>
     <string name="retry">Retry</string>
+    
+    <!-- Error Messages -->
+    <string name="network_timeout_error">Request timed out. Please check your connection and try again.</string>
+    <string name="network_error">Network error. Please check your connection and try again.</string>
+    <string name="generic_error">Something went wrong. Please try again later.</string>
+    
+    <!-- Additional UI Text -->
+    <string name="monthly_growth">Monthly Growth</string>
+    <string name="planting_certificates">Planting Certificates</string>
+    <string name="certificates_verified">%d verified</string>
+    <string name="monthly_growth_percent">+%.1f%%</string>
 </resources>

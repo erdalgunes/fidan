@@ -53,7 +53,12 @@ import kotlinx.coroutines.launch
 import com.erdalgunes.fidan.config.AppConfig
 import com.erdalgunes.fidan.data.ImpactData
 import com.erdalgunes.fidan.data.ImpactRepository
-import com.erdalgunes.fidan.data.Result
+import com.erdalgunes.fidan.ui.viewmodel.ImpactViewModel
+import com.erdalgunes.fidan.ui.viewmodel.ImpactViewModelFactory
+import com.erdalgunes.fidan.ui.viewmodel.ImpactUiState
+import com.erdalgunes.fidan.ui.viewmodel.ErrorType
+import com.erdalgunes.fidan.utils.UrlUtils
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -509,31 +514,19 @@ fun StatCard(
     }
 }
 
-sealed class ImpactUiState {
-    object Loading : ImpactUiState()
-    data class Success(val data: ImpactData) : ImpactUiState()
-    data class Error(val message: String) : ImpactUiState()
-}
 
 @Composable
 fun ImpactScreen(paddingValues: PaddingValues) {
     val context = LocalContext.current
     val repository = remember { ImpactRepository() }
-    var uiState by remember { mutableStateOf<ImpactUiState>(ImpactUiState.Loading) }
-    val scope = rememberCoroutineScope()
+    val viewModel: ImpactViewModel = viewModel(
+        factory = ImpactViewModelFactory(repository)
+    )
+    val uiState by viewModel.uiState.collectAsState()
     
     // URLs for external links
     val githubSponsorsUrl = AppConfig.GITHUB_SPONSORS_URL
     val transparencyReportUrl = AppConfig.TRANSPARENCY_REPORT_URL
-    
-    // Load impact data using repository
-    LaunchedEffect(Unit) {
-        when (val result = repository.getImpactData()) {
-            is Result.Success -> uiState = ImpactUiState.Success(result.data)
-            is Result.Error -> uiState = ImpactUiState.Error(result.message)
-            is Result.Loading -> uiState = ImpactUiState.Loading
-        }
-    }
     
     Column(
         modifier = Modifier
@@ -554,23 +547,17 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 ImpactLoadingState()
             }
             is ImpactUiState.Error -> {
+                val errorState = uiState as ImpactUiState.Error
                 ImpactErrorState(
-                    errorMessage = (uiState as ImpactUiState.Error).message,
-                    onRetry = {
-                        scope.launch {
-                            uiState = ImpactUiState.Loading
-                            when (val result = repository.getImpactData()) {
-                                is Result.Success -> uiState = ImpactUiState.Success(result.data)
-                                is Result.Error -> uiState = ImpactUiState.Error(result.message)
-                                is Result.Loading -> uiState = ImpactUiState.Loading
-                            }
-                        }
-                    }
+                    errorMessage = errorState.message,
+                    errorType = errorState.errorType,
+                    onRetry = { viewModel.refresh() }
                 )
             }
             is ImpactUiState.Success -> {
+                val successState = uiState as ImpactUiState.Success
                 ImpactSuccessContent(
-                    impactData = (uiState as ImpactUiState.Success).data,
+                    impactData = successState.data,
                     githubSponsorsUrl = githubSponsorsUrl,
                     transparencyReportUrl = transparencyReportUrl,
                     context = context
@@ -602,14 +589,20 @@ fun ImpactLoadingState() {
 @Composable
 fun ImpactErrorState(
     errorMessage: String,
+    errorType: ErrorType = ErrorType.GENERIC,
     onRetry: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        val errorIcon = when (errorType) {
+            ErrorType.NETWORK -> "📶"
+            ErrorType.TIMEOUT -> "⏰"
+            ErrorType.GENERIC -> "⚠️"
+        }
         Text(
-            text = "⚠️",
+            text = errorIcon,
             fontSize = 48.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -724,8 +717,7 @@ fun ImpactSuccessContent(
                 
                 Button(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubSponsorsUrl))
-                        context.startActivity(intent)
+                        UrlUtils.openUrl(context, githubSponsorsUrl)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -767,8 +759,7 @@ fun ImpactSuccessContent(
                 
                 OutlinedButton(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(transparencyReportUrl))
-                        context.startActivity(intent)
+                        UrlUtils.openUrl(context, transparencyReportUrl)
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

@@ -1,6 +1,9 @@
 package com.erdalgunes.fidan.data
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.TimeoutCancellationException
+import java.io.IOException
+import java.net.SocketTimeoutException
 import com.erdalgunes.fidan.config.NetworkConfig
 import com.erdalgunes.fidan.config.MockData
 
@@ -38,7 +41,15 @@ class ImpactRepository {
             
             Result.Success(data)
         } catch (e: Exception) {
-            Result.Error("Network timeout. Please check your connection and try again.")
+            val errorMessage = when (e) {
+                is TimeoutCancellationException, is SocketTimeoutException -> 
+                    "Request timed out. Please check your connection and try again."
+                is IOException -> 
+                    "Network error. Please check your connection and try again."
+                else -> 
+                    "Something went wrong. Please try again later."
+            }
+            Result.Error(errorMessage)
         }
     }
 }
