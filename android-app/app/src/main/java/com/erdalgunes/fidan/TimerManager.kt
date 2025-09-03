@@ -8,7 +8,10 @@ import kotlinx.coroutines.flow.asStateFlow
 data class TimerState(
     val timeLeftMillis: Long = 25 * 60 * 1000L,
     val isRunning: Boolean = false,
-    val sessionCompleted: Boolean = false
+    val sessionCompleted: Boolean = false,
+    val isAppInBackground: Boolean = false,
+    val graceTimeLeftMillis: Long = 30 * 1000L,
+    val treeWithering: Boolean = false
 )
 
 interface TimerCallback {
@@ -24,7 +27,9 @@ class TimerManager(
     val state: StateFlow<TimerState> = _state.asStateFlow()
     
     private var timerJob: Job? = null
+    private var graceJob: Job? = null
     private val sessionDurationMillis = 25 * 60 * 1000L
+    private val gracePeriodMillis = 30 * 1000L
     
     fun startTimer() {
         if (_state.value.isRunning) return
@@ -75,7 +80,57 @@ class TimerManager(
     
     fun cleanup() {
         timerJob?.cancel()
+        graceJob?.cancel()
         coroutineScope.cancel()
+    }
+    
+    fun onAppPaused() {
+        val currentState = _state.value
+        if (currentState.isRunning) {
+            _state.value = currentState.copy(
+                isAppInBackground = true,
+                treeWithering = true
+            )
+            startGracePeriod()
+        }
+    }
+    
+    fun onAppResumed() {
+        val currentState = _state.value
+        if (currentState.isAppInBackground) {
+            graceJob?.cancel()
+            _state.value = currentState.copy(
+                isAppInBackground = false,
+                treeWithering = false,
+                graceTimeLeftMillis = gracePeriodMillis
+            )
+        }
+    }
+    
+    private fun startGracePeriod() {
+        graceJob = coroutineScope.launch {
+            var graceTimeLeft = gracePeriodMillis
+            
+            while (isActive && graceTimeLeft > 0 && _state.value.isAppInBackground) {
+                delay(1000)
+                graceTimeLeft -= 1000
+                _state.value = _state.value.copy(graceTimeLeftMillis = graceTimeLeft)
+            }
+            
+            // If still in background after grace period, just stop the session
+            if (_state.value.isAppInBackground && graceTimeLeft <= 0) {
+                val currentState = _state.value
+                val timeElapsed = sessionDurationMillis - currentState.timeLeftMillis
+                _state.value = currentState.copy(
+                    isRunning = false,
+                    treeWithering = false,
+                    isAppInBackground = false
+                )
+                timerJob?.cancel()
+                callback.onSessionStopped(wasRunning = true, timeElapsed = timeElapsed)
+                resetTimer()
+            }
+        }
     }
     
     fun getCurrentTimeText(): String {
@@ -86,9 +141,11 @@ class TimerManager(
     }
     
     fun getStatusMessage(): String {
+        val state = _state.value
         return when {
-            _state.value.isRunning -> "Focus on your task!"
-            _state.value.sessionCompleted -> "Session complete!"
+            state.treeWithering -> "⚠️ Return to app in ${state.graceTimeLeftMillis / 1000}s to keep growing!"
+            state.isRunning -> "Focus on your task!"
+            state.sessionCompleted -> "Session complete!"
             else -> "Ready to focus?"
         }
     }

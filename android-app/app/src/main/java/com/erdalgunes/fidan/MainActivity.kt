@@ -32,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.lifecycleScope
 import com.erdalgunes.fidan.data.*
 import com.erdalgunes.fidan.forest.*
+import com.erdalgunes.fidan.ui.theme.FidanTheme
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -49,6 +50,18 @@ class MainActivity : ComponentActivity(), TimerCallback {
                 FidanApp(timerManager, forestManager)
             }
         }
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Notify timer manager that app is going to background
+        timerManager.onAppPaused()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Notify timer manager that app is resuming
+        timerManager.onAppResumed()
     }
     
     override fun onSessionCompleted() {
@@ -75,32 +88,13 @@ class MainActivity : ComponentActivity(), TimerCallback {
         }
     }
     
+    
     override fun onDestroy() {
         super.onDestroy()
         timerManager.cleanup()
     }
 }
 
-@Composable
-fun FidanTheme(content: @Composable () -> Unit) {
-    val colorScheme = lightColorScheme(
-        primary = Color(0xFF4CAF50),
-        onPrimary = Color.White,
-        primaryContainer = Color(0xFF81C784),
-        secondary = Color(0xFF795548),
-        onSecondary = Color.White,
-        secondaryContainer = Color(0xFFA1887F),
-        background = Color(0xFFF5F5F5),
-        surface = Color.White,
-        onBackground = Color(0xFF1B5E20),
-        onSurface = Color(0xFF2E7D32)
-    )
-    
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -232,18 +226,39 @@ fun TimerScreen(
                 .size(200.dp)
                 .scale(scale)
                 .clip(CircleShape)
-                .background(Color.White),
+                .background(
+                    when {
+                        timerState.treeWithering -> Color(0xFFFFF3E0)
+                        else -> Color.White
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Show tree emoji based on state
+                Text(
+                    text = when {
+                        timerState.treeWithering -> "🥀"
+                        timerState.isRunning -> "🌱"
+                        else -> "🌱"
+                    },
+                    fontSize = 32.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
                 Text(
                     text = timeText,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = when {
+                        timerState.treeWithering -> Color(0xFFFF9800)
+                        else -> MaterialTheme.colorScheme.primary
+                    }
                 )
                 Text(
-                    text = "Focus Time",
+                    text = when {
+                        timerState.treeWithering -> "Tree Withering"
+                        else -> "Focus Time"
+                    },
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
