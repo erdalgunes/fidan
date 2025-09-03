@@ -73,6 +73,15 @@ private val LightColorScheme = lightColorScheme(
     inversePrimary = Teal80,
 )
 
+/**
+ * Fidan Material 3 theme with productivity-optimized colors.
+ * 
+ * Color scheme features:
+ * - Teal primary colors for enhanced focus and concentration
+ * - Sage green secondary colors for balance and nature connection
+ * - Follows WCAG AA accessibility guidelines for contrast ratios
+ * - Supports dynamic colors on Android 12+
+ */
 @Composable
 fun FidanTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
