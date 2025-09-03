@@ -564,8 +564,15 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Every GitHub sponsorship plants real trees! 100% of proceeds go directly to verified tree-planting organizations.",
+                    text = "Every GitHub sponsorship plants real trees! 75% of proceeds go directly to verified tree-planting organizations.",
                     style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = "⚡ 75% trees + 25% maintenance = Sustainable impact",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
                 
@@ -605,6 +612,8 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 )
                 
                 TransparencyItem("Total Donations", "$${"%.2f".format(totalDonations)}")
+                TransparencyItem("Tree Planting Fund", "75% of proceeds")
+                TransparencyItem("Maintenance Fund", "25% for development")
                 TransparencyItem("Partner Organizations", "$partnersCount active")
                 TransparencyItem("Last Update", "January 2025")
                 TransparencyItem("Certificates Available", "View planting proofs")
@@ -643,7 +652,7 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Text(
-                    text = "All partners are verified 501(c)(3) organizations with transparent impact reporting.",
+                    text = "All partners are verified 501(c)(3) organizations with transparent impact reporting. 75% of sponsorship funds are donated to these organizations, 25% supports app development and maintenance.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
