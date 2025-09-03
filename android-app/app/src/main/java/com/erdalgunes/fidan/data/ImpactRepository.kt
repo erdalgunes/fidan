@@ -6,7 +6,9 @@ data class ImpactData(
     val realTreesPlanted: Int,
     val totalDonations: Double,
     val partnersCount: Int,
-    val lastUpdated: String
+    val lastUpdated: String,
+    val monthlyGrowth: Double = 0.0,
+    val certificates: Int = 0
 )
 
 sealed class Result<out T> {
@@ -27,7 +29,9 @@ class ImpactRepository {
                 realTreesPlanted = 1247,
                 totalDonations = 3741.50,
                 partnersCount = 3,
-                lastUpdated = "January 2025"
+                lastUpdated = "January 2025",
+                monthlyGrowth = 8.5,
+                certificates = 15
             )
             
             Result.Success(data)

@@ -43,6 +43,9 @@ import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import com.erdalgunes.fidan.data.ImpactRepository
+import com.erdalgunes.fidan.data.ImpactData
+import com.erdalgunes.fidan.data.Result
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -498,15 +501,6 @@ fun StatCard(
     }
 }
 
-data class ImpactData(
-    val realTreesPlanted: Int,
-    val totalDonations: Double,
-    val partnersCount: Int,
-    val lastUpdated: String,
-    val monthlyGrowth: Double = 0.0,
-    val certificates: Int = 0
-)
-
 sealed class ImpactUiState {
     object Loading : ImpactUiState()
     data class Success(val data: ImpactData) : ImpactUiState()
@@ -516,32 +510,27 @@ sealed class ImpactUiState {
 @Composable
 fun ImpactScreen(paddingValues: PaddingValues) {
     val context = LocalContext.current
-    var impactData by remember { mutableStateOf<ImpactData?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
+    val repository = remember { ImpactRepository() }
+    var uiState by remember { mutableStateOf<ImpactUiState>(ImpactUiState.Loading) }
+    val scope = rememberCoroutineScope()
     
     // URLs for external links
     val githubSponsorsUrl = "https://github.com/sponsors/erdalgunes"
     val transparencyReportUrl = "https://github.com/erdalgunes/fidan/wiki/Transparency-Report"
     
-    // Simulate API call to load impact data
+    // Load impact data using repository
     LaunchedEffect(Unit) {
-        delay(1000) // Simulate network delay
-        impactData = ImpactData(
-            realTreesPlanted = 1247,
-            totalDonations = 3741.50,
-            partnersCount = 3,
-            lastUpdated = "January 2025",
-            monthlyGrowth = 8.5,
-            certificates = 15
-        )
-        isLoading = false
+        when (val result = repository.getImpactData()) {
+            is Result.Success -> uiState = ImpactUiState.Success(result.data)
+            is Result.Error -> uiState = ImpactUiState.Error(result.message)
+            is Result.Loading -> uiState = ImpactUiState.Loading
+        }
     }
     
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         Text(
@@ -552,6 +541,105 @@ fun ImpactScreen(paddingValues: PaddingValues) {
             color = MaterialTheme.colorScheme.primary
         )
         
+        when (uiState) {
+            is ImpactUiState.Loading -> {
+                ImpactLoadingState()
+            }
+            is ImpactUiState.Error -> {
+                ImpactErrorState(
+                    errorMessage = (uiState as ImpactUiState.Error).message,
+                    onRetry = {
+                        scope.launch {
+                            uiState = ImpactUiState.Loading
+                            when (val result = repository.getImpactData()) {
+                                is Result.Success -> uiState = ImpactUiState.Success(result.data)
+                                is Result.Error -> uiState = ImpactUiState.Error(result.message)
+                                is Result.Loading -> uiState = ImpactUiState.Loading
+                            }
+                        }
+                    }
+                )
+            }
+            is ImpactUiState.Success -> {
+                ImpactSuccessContent(
+                    impactData = (uiState as ImpactUiState.Success).data,
+                    githubSponsorsUrl = githubSponsorsUrl,
+                    transparencyReportUrl = transparencyReportUrl,
+                    context = context
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ImpactLoadingState() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(48.dp),
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Loading impact data...",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun ImpactErrorState(
+    errorMessage: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "⚠️",
+            fontSize = 48.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Text(
+            text = "Unable to load impact data",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = errorMessage,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Text("Retry")
+        }
+    }
+}
+
+@Composable
+fun ImpactSuccessContent(
+    impactData: ImpactData,
+    githubSponsorsUrl: String,
+    transparencyReportUrl: String,
+    context: android.content.Context
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
         // Real Trees Counter
         Card(
             modifier = Modifier
@@ -571,19 +659,12 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                     fontSize = 48.sp,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    AnimatedTreeCount(
-                        targetCount = impactData?.realTreesPlanted ?: 0,
-                        modifier = Modifier.semantics { 
-                            contentDescription = "Real trees planted counter showing ${impactData?.realTreesPlanted ?: 0} trees" 
-                        }
-                    )
-                }
+                AnimatedTreeCount(
+                    targetCount = impactData.realTreesPlanted,
+                    modifier = Modifier.semantics { 
+                        contentDescription = "Real trees planted counter showing ${impactData.realTreesPlanted} trees" 
+                    }
+                )
                 Text(
                     text = "Real Trees Planted",
                     style = MaterialTheme.typography.bodyLarge,
@@ -666,21 +747,13 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 
-                if (isLoading) {
-                    repeat(6) {
-                        TransparencyItem("Loading...", "---")
-                    }
-                } else {
-                    impactData?.let { data ->
-                        TransparencyItem("Total Donations", "${"$%,.2f".format(data.totalDonations)}")
-                        TransparencyItem("Tree Planting Fund", "75% of proceeds")
-                        TransparencyItem("Maintenance Fund", "25% for development")
-                        TransparencyItem("Partner Organizations", "${data.partnersCount} active")
-                        TransparencyItem("Monthly Growth", "+${data.monthlyGrowth}%")
-                        TransparencyItem("Planting Certificates", "${data.certificates} verified")
-                        TransparencyItem("Last Update", data.lastUpdated)
-                    }
-                }
+                TransparencyItem("Total Donations", "${"$%,.2f".format(impactData.totalDonations)}")
+                TransparencyItem("Tree Planting Fund", "75% of proceeds")
+                TransparencyItem("Maintenance Fund", "25% for development")
+                TransparencyItem("Partner Organizations", "${impactData.partnersCount} active")
+                TransparencyItem("Monthly Growth", "+${impactData.monthlyGrowth}%")
+                TransparencyItem("Planting Certificates", "${impactData.certificates} verified")
+                TransparencyItem("Last Update", impactData.lastUpdated)
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 
