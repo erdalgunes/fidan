@@ -81,6 +81,9 @@ dependencies {
     implementation(libs.androidx.compose.material.iconsExtended)
     implementation(libs.androidx.lifecycle.runtimeCompose)
     
+    // Garmin Connect IQ Mobile SDK - Temporarily disabled for MVP testing
+    // implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0")
+    
     // Circuit - removed for simplified build
     // Accompanist - removed for simplified build
     
