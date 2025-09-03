@@ -1,11 +1,16 @@
 package com.erdalgunes.fidan.garmin
 
+import com.erdalgunes.fidan.R
+
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 
 /**
@@ -41,12 +46,18 @@ class GarminSyncService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "GarminSyncService created")
-        sessionStorage = SessionStorage(this)
-        createNotificationChannel()
         
-        // TODO: Initialize Connect IQ SDK in future phase
-        // For MVP, we'll implement a test session simulator
-        simulateTestSession()
+        try {
+            sessionStorage = SessionStorage(this)
+            createNotificationChannel()
+            
+            // TODO: Initialize Connect IQ SDK in future phase
+            // For MVP, we'll implement a test session simulator
+            simulateTestSession()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize GarminSyncService", e)
+            stopSelf()
+        }
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -142,7 +153,7 @@ class GarminSyncService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Fidan - Garmin Sync")
             .setContentText("Ready to sync watch sessions...")
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: Use app icon
+            .setSmallIcon(R.drawable.ic_fidan_notification)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
@@ -150,12 +161,25 @@ class GarminSyncService : Service() {
     
     private fun showSyncNotification(watchSession: WatchSession) {
         try {
+            // Check for notification permission on Android 13+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val hasPermission = ContextCompat.checkSelfPermission(
+                    this, 
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+                
+                if (!hasPermission) {
+                    Log.w(TAG, "POST_NOTIFICATIONS permission not granted, skipping sync notification")
+                    return
+                }
+            }
+            
             val notificationManager = getSystemService(NotificationManager::class.java)
             
             val notification = NotificationCompat.Builder(this, SYNC_CHANNEL_ID)
                 .setContentTitle("Watch Session Synced")
                 .setContentText("${watchSession.durationFormatted()} focus session from ${watchSession.deviceId}")
-                .setSmallIcon(android.R.drawable.ic_dialog_info) // TODO: Use app icon
+                .setSmallIcon(R.drawable.ic_fidan_notification)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build()

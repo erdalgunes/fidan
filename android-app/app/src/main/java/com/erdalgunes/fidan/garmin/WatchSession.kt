@@ -15,10 +15,11 @@ data class WatchSession(
 ) {
     
     /**
-     * Check if this is a valid 25-minute focus session.
+     * Check if this is a valid focus session.
+     * Allows for 20-30 minute sessions with generous tolerance.
      */
     fun isValidFocusSession(): Boolean {
-        return durationSeconds >= 1400 && durationSeconds <= 1600 // 23-27 minutes tolerance
+        return durationSeconds >= 1200 && durationSeconds <= 1800 // 20-30 minutes tolerance
     }
     
     /**

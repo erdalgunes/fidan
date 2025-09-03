@@ -108,23 +108,45 @@ class SessionStorage(private val context: Context) {
     private fun getStoredSessions(): List<WatchSession> {
         try {
             val jsonString = prefs.getString(KEY_SESSIONS, null) ?: return emptyList()
+            
+            if (jsonString.isBlank()) {
+                return emptyList()
+            }
+            
             val jsonArray = JSONArray(jsonString)
             val sessions = mutableListOf<WatchSession>()
             
             for (i in 0 until jsonArray.length()) {
-                val sessionJson = jsonArray.getJSONObject(i)
-                val session = WatchSession(
-                    timestamp = sessionJson.getLong("timestamp"),
-                    durationSeconds = sessionJson.getInt("durationSeconds"),
-                    deviceId = sessionJson.getString("deviceId")
-                )
-                sessions.add(session)
+                try {
+                    val sessionJson = jsonArray.getJSONObject(i)
+                    
+                    // Validate required fields exist
+                    if (!sessionJson.has("timestamp") || 
+                        !sessionJson.has("durationSeconds") || 
+                        !sessionJson.has("deviceId")) {
+                        Log.w(TAG, "Skipping session with missing required fields at index $i")
+                        continue
+                    }
+                    
+                    val session = WatchSession(
+                        timestamp = sessionJson.getLong("timestamp"),
+                        durationSeconds = sessionJson.getInt("durationSeconds"),
+                        deviceId = sessionJson.getString("deviceId")
+                    )
+                    sessions.add(session)
+                    
+                } catch (e: Exception) {
+                    Log.w(TAG, "Skipping corrupted session at index $i", e)
+                    continue
+                }
             }
             
             return sessions.sortedByDescending { it.timestamp }
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading stored sessions", e)
+            Log.e(TAG, "Error reading stored sessions, clearing corrupted data", e)
+            // Clear corrupted data
+            prefs.edit().remove(KEY_SESSIONS).apply()
             return emptyList()
         }
     }
@@ -134,20 +156,33 @@ class SessionStorage(private val context: Context) {
             val jsonArray = JSONArray()
             
             for (session in sessions) {
-                val sessionJson = JSONObject().apply {
-                    put("timestamp", session.timestamp)
-                    put("durationSeconds", session.durationSeconds)
-                    put("deviceId", session.deviceId)
+                try {
+                    val sessionJson = JSONObject().apply {
+                        put("timestamp", session.timestamp)
+                        put("durationSeconds", session.durationSeconds)
+                        put("deviceId", session.deviceId ?: "unknown")
+                    }
+                    jsonArray.put(sessionJson)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Skipping session due to serialization error: ${session.deviceId}", e)
+                    continue
                 }
-                jsonArray.put(sessionJson)
+            }
+            
+            val jsonString = jsonArray.toString()
+            if (jsonString.length > 1000000) { // 1MB limit
+                Log.w(TAG, "Session data too large, truncating to latest sessions")
+                val truncatedSessions = sessions.take(MAX_STORED_SESSIONS / 2)
+                return saveSessionsToPrefs(truncatedSessions)
             }
             
             prefs.edit()
-                .putString(KEY_SESSIONS, jsonArray.toString())
+                .putString(KEY_SESSIONS, jsonString)
                 .apply()
                 
         } catch (e: Exception) {
             Log.e(TAG, "Error saving sessions to preferences", e)
+            throw e // Re-throw so caller knows save failed
         }
     }
     
