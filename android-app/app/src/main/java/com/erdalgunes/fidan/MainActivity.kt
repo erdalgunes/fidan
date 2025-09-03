@@ -171,15 +171,16 @@ fun TimerScreen(
     )
     
     // Timer countdown effect
-    LaunchedEffect(isRunning) {
+    LaunchedEffect(isRunning, timeLeftMillis) {
         if (isRunning && timeLeftMillis > 0) {
-            while (isRunning && timeLeftMillis > 0) {
-                delay(1000)
-                onTimeUpdate(timeLeftMillis - 1000)
-            }
-            if (timeLeftMillis <= 1000) {
+            delay(1000)
+            val newTime = timeLeftMillis - 1000
+            if (newTime <= 0) {
+                onTimeUpdate(0)
                 onRunningChange(false)
                 onSessionComplete()
+            } else {
+                onTimeUpdate(newTime)
             }
         }
     }
