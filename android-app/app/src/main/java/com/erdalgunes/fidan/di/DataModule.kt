@@ -19,15 +19,6 @@ object DataModule {
         return ImpactRepository()
     }
     
-    @Provides
-    @Singleton
-    fun provideTimerService(): TimerService {
-        return TimerService()
-    }
-    
-    @Provides
-    @Singleton
-    fun provideForestService(): ForestService {
-        return ForestService()
-    }
+    // TimerService and ForestService have @Singleton and @Inject constructor
+    // so they don't need @Provides methods - they can inject themselves
 }
