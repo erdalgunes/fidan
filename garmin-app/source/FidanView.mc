@@ -7,6 +7,8 @@ class FidanView extends WatchUi.View {
     private var _treeSprite;
     private var _centerX;
     private var _centerY;
+    private var _width;
+    private var _height;
 
     function initialize(sessionManager) {
         View.initialize();
@@ -15,8 +17,10 @@ class FidanView extends WatchUi.View {
     }
 
     function onLayout(dc) {
-        _centerX = dc.getWidth() / 2;
-        _centerY = dc.getHeight() / 2;
+        _width = dc.getWidth();
+        _height = dc.getHeight();
+        _centerX = _width / 2;
+        _centerY = _height / 2;
     }
 
     function onUpdate(dc) {
@@ -131,7 +135,7 @@ class FidanView extends WatchUi.View {
         
         // Draw instruction hint at bottom
         if (!isActive) {
-            var hintY = dc.getHeight() - 30;
+            var hintY = _height - 30;
             dc.drawText(_centerX, hintY, Graphics.FONT_XTINY, "Press Start", Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
