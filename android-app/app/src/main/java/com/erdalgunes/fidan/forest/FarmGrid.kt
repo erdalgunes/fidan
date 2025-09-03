@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.alpha
 import com.erdalgunes.fidan.data.*
 
 @Composable
@@ -52,11 +53,14 @@ private fun FarmPlotItem(
     onClick: () -> Unit
 ) {
     val backgroundColor = when (plot.state) {
-        PlotState.EMPTY -> if (isDayTime) Color(0xFF8BC34A) else Color(0xFF4E7B47) // Grass
+        PlotState.EMPTY -> Color.Transparent // Empty slots have no background
         PlotState.PLANTED -> if (isDayTime) Color(0xFF795548) else Color(0xFF3E2723) // Soil
     }
     
-    val borderColor = if (isDayTime) Color(0xFF4CAF50) else Color(0xFF2E7D32)
+    val borderColor = when (plot.state) {
+        PlotState.EMPTY -> if (isDayTime) Color(0xFF4CAF50).copy(alpha = 0.4f) else Color(0xFF2E7D32).copy(alpha = 0.4f)
+        PlotState.PLANTED -> if (isDayTime) Color(0xFF4CAF50) else Color(0xFF2E7D32)
+    }
     
     Box(
         modifier = Modifier
@@ -64,8 +68,8 @@ private fun FarmPlotItem(
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
             .border(
-                width = 1.dp,
-                color = borderColor.copy(alpha = 0.3f),
+                width = if (plot.state == PlotState.EMPTY) 2.dp else 1.dp,
+                color = borderColor,
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable { onClick() },
@@ -73,16 +77,12 @@ private fun FarmPlotItem(
     ) {
         when (plot.state) {
             PlotState.EMPTY -> {
-                // Empty plot - show grass texture
+                // Empty slot - just show a subtle plus icon or dot
                 Text(
-                    text = if (isDayTime) "🌿" else "🌾",
-                    fontSize = 16.sp,
-                    modifier = Modifier.offset(x = (-8).dp, y = (-8).dp)
-                )
-                Text(
-                    text = if (isDayTime) "🌿" else "🌾", 
-                    fontSize = 14.sp,
-                    modifier = Modifier.offset(x = 6.dp, y = 4.dp)
+                    text = "+",
+                    fontSize = 24.sp,
+                    color = borderColor,
+                    modifier = Modifier.alpha(0.6f)
                 )
             }
             PlotState.PLANTED -> {
