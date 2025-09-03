@@ -24,6 +24,7 @@ class GarminSyncService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
     
     private lateinit var sessionStorage: SessionStorage
+    private var testJob: Job? = null
     
     companion object {
         private const val TAG = "GarminSyncService"
@@ -68,6 +69,7 @@ class GarminSyncService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
     
     override fun onDestroy() {
+        testJob?.cancel()
         serviceJob.cancel()
         super.onDestroy()
         Log.d(TAG, "GarminSyncService destroyed")
@@ -78,7 +80,7 @@ class GarminSyncService : Service() {
      * This will be replaced with real Garmin Connect IQ integration.
      */
     private fun simulateTestSession() {
-        serviceScope.launch {
+        testJob = serviceScope.launch {
             // Wait 10 seconds then simulate receiving a session from watch
             delay(10000)
             

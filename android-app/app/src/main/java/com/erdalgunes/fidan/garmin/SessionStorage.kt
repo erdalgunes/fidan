@@ -7,7 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.time.Instant
+// Note: Using System.currentTimeMillis() instead of Java Time API for Android compatibility
 
 /**
  * Simple storage for watch sessions using SharedPreferences.
@@ -76,7 +76,7 @@ class SessionStorage(private val context: Context) {
      * Get sessions from the last N days.
      */
     suspend fun getRecentSessions(days: Int = 7): List<WatchSession> = withContext(Dispatchers.IO) {
-        val cutoffTimestamp = Instant.now().minusSeconds(days * 24 * 60 * 60L).epochSecond
+        val cutoffTimestamp = (System.currentTimeMillis() / 1000) - (days * 24 * 60 * 60L)
         getStoredSessions().filter { it.timestamp >= cutoffTimestamp }
     }
     
@@ -160,7 +160,7 @@ class SessionStorage(private val context: Context) {
                     val sessionJson = JSONObject().apply {
                         put("timestamp", session.timestamp)
                         put("durationSeconds", session.durationSeconds)
-                        put("deviceId", session.deviceId ?: "unknown")
+                        put("deviceId", session.deviceId)
                     }
                     jsonArray.put(sessionJson)
                 } catch (e: Exception) {
