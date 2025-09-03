@@ -7,8 +7,8 @@
     <string name="real_trees_planted">Real Trees Planted</string>
     <string name="through_github_sponsors">Through GitHub Sponsors</string>
     <string name="support_fidan">💚 Support Fidan</string>
-    <string name="sponsorship_description">Support Fidan development and environmental impact! 75% of proceeds go directly to verified tree-planting organizations.</string>
-    <string name="sustainability_split">⚡ 75% trees + 25% maintenance = Sustainable impact</string>
+    <string name="sponsorship_description">Support Fidan development and environmental impact! 75%% of proceeds go directly to verified tree-planting organizations.</string>
+    <string name="sustainability_split">⚡ 75%% trees + 25%% maintenance = Sustainable impact</string>
     <string name="become_sponsor">Become a Sponsor</string>
     
     <!-- Sponsorship Tiers -->
@@ -34,8 +34,8 @@
     <string name="last_update">Last Update</string>
     <string name="certificates_available">Certificates Available</string>
     <string name="view_monthly_report">View Monthly Report</string>
-    <string name="tree_fund_percentage">75% of proceeds</string>
-    <string name="maintenance_percentage">25% for development</string>
+    <string name="tree_fund_percentage">75%% of proceeds</string>
+    <string name="maintenance_percentage">25%% for development</string>
     <string name="active_partners">%d active</string>
     <string name="view_planting_proofs">View planting proofs</string>
     

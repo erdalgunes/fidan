@@ -37,6 +37,11 @@ import androidx.compose.foundation.rememberScrollState
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
+import com.erdalgunes.fidan.data.ImpactRepository
+import com.erdalgunes.fidan.data.ImpactData
+import com.erdalgunes.fidan.data.Result
+import com.erdalgunes.fidan.config.AppConfig
+import androidx.compose.ui.res.stringResource
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -164,7 +169,7 @@ fun FidanApp(timerManager: TimerManager) {
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
                     icon = { Text("🌍", fontSize = 20.sp) },
-                    label = { Text("Impact") }
+                    label = { Text(stringResource(R.string.impact_tab_label)) }
                 )
             }
         }
@@ -505,9 +510,6 @@ fun ImpactScreen(paddingValues: PaddingValues) {
     var impactData by remember { mutableStateOf<ImpactData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     
-    // URLs for external links
-    val githubSponsorsUrl = "https://github.com/sponsors/erdalgunes"
-    val transparencyReportUrl = "https://github.com/erdalgunes/fidan/wiki/Transparency-Report"
     
     // Simulate API call to load impact data
     LaunchedEffect(Unit) {
@@ -611,15 +613,16 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 )
                 
                 // Sponsorship Tiers
-                SponsorshipTier("🌱 Seedling", "$3/month", "1 tree planted")
-                SponsorshipTier("🌿 Sapling", "$10/month", "5 trees planted")  
-                SponsorshipTier("🌳 Forest Guardian", "$25/month", "15 trees planted")
+                SponsorshipTier(stringResource(R.string.tier_seed), stringResource(R.string.price_seed), stringResource(R.string.benefit_seed))
+                SponsorshipTier(stringResource(R.string.tier_seedling), stringResource(R.string.price_seedling), stringResource(R.string.benefit_seedling))
+                SponsorshipTier(stringResource(R.string.tier_sapling), stringResource(R.string.price_sapling), stringResource(R.string.benefit_sapling))  
+                SponsorshipTier(stringResource(R.string.tier_forest_guardian), stringResource(R.string.price_forest_guardian), stringResource(R.string.benefit_forest_guardian))
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Button(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubSponsorsUrl))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.GITHUB_SPONSORS_URL))
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -627,7 +630,7 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Become a Sponsor")
+                    Text(stringResource(R.string.become_sponsor))
                 }
             }
         }
@@ -667,7 +670,7 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 
                 OutlinedButton(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(transparencyReportUrl))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.TRANSPARENCY_REPORT_URL))
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
