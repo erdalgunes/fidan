@@ -1,6 +1,7 @@
 package com.erdalgunes.fidan.forest
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -10,11 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.zIndex
 import com.erdalgunes.fidan.data.Tree
 import java.text.SimpleDateFormat
 import java.util.*
@@ -27,11 +29,22 @@ fun TreeDetailDialog(
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault())
     val durationMinutes = tree.sessionData.durationMillis / (1000 * 60)
     
-    Dialog(onDismissRequest = onDismiss) {
+    // Full screen overlay with modal background
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable { onDismiss() }
+            .zIndex(1000f),
+        contentAlignment = Alignment.Center
+    ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxWidth(0.9f)
+                .clickable { /* Prevent click through */ }
+                .semantics {
+                    contentDescription = "Tree details dialog for ${tree.treeType.displayName}"
+                },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -63,10 +76,16 @@ fun TreeDetailDialog(
                         )
                     }
                     
-                    IconButton(onClick = onDismiss) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Close tree details dialog"
+                            role = Role.Button
+                        }
+                    ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Close",
+                            contentDescription = null, // Handled by semantics above
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

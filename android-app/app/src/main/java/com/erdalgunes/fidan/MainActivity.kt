@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity(), TimerCallback {
         enableEdgeToEdge()
         
         timerManager = TimerManager(this, lifecycleScope)
-        forestManager = ForestManager()
+        forestManager = ForestManager(this)
         
         setContent {
             FidanTheme {
