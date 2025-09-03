@@ -29,6 +29,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import android.util.Log
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +76,30 @@ fun FidanApp() {
     // Timer state persisted across tab changes
     var isRunning by rememberSaveable { mutableStateOf(false) }
     var timeLeftMillis by rememberSaveable { mutableLongStateOf(25 * 60 * 1000L) }
+    
+    // Timer countdown effect - runs at the app level so it persists across tab changes
+    LaunchedEffect(isRunning) {
+        Log.d("FidanTimer", "LaunchedEffect triggered, isRunning=$isRunning")
+        if (isRunning) {
+            while (isActive) {
+                Log.d("FidanTimer", "Timer loop iteration, time=$timeLeftMillis")
+                delay(1000)
+                if (timeLeftMillis > 0) {
+                    timeLeftMillis -= 1000
+                    Log.d("FidanTimer", "Timer tick: new time = $timeLeftMillis")
+                    if (timeLeftMillis <= 0) {
+                        isRunning = false
+                        completedTrees++
+                        timeLeftMillis = 25 * 60 * 1000L
+                        break
+                    }
+                } else {
+                    break
+                }
+            }
+        }
+        Log.d("FidanTimer", "Timer loop exited")
+    }
     
     Scaffold(
         topBar = {
@@ -137,14 +163,12 @@ fun FidanApp() {
                 paddingValues = innerPadding,
                 timeLeftMillis = timeLeftMillis,
                 isRunning = isRunning,
-                onTimeUpdate = { timeLeftMillis = it },
                 onRunningChange = { isRunning = it },
-                onSessionComplete = { 
-                    completedTrees++
-                    timeLeftMillis = 25 * 60 * 1000L
-                },
                 onSessionStopped = { 
-                    incompleteTrees++
+                    isRunning = false
+                    if (timeLeftMillis < 25 * 60 * 1000L) {
+                        incompleteTrees++
+                    }
                     timeLeftMillis = 25 * 60 * 1000L
                 }
             )
@@ -159,9 +183,7 @@ fun TimerScreen(
     paddingValues: PaddingValues,
     timeLeftMillis: Long,
     isRunning: Boolean,
-    onTimeUpdate: (Long) -> Unit,
     onRunningChange: (Boolean) -> Unit,
-    onSessionComplete: () -> Unit,
     onSessionStopped: () -> Unit
 ) {
     val scale by animateFloatAsState(
@@ -170,20 +192,7 @@ fun TimerScreen(
         label = "timer_scale"
     )
     
-    // Timer countdown effect
-    LaunchedEffect(isRunning, timeLeftMillis) {
-        if (isRunning && timeLeftMillis > 0) {
-            delay(1000)
-            val newTime = timeLeftMillis - 1000
-            if (newTime <= 0) {
-                onTimeUpdate(0)
-                onRunningChange(false)
-                onSessionComplete()
-            } else {
-                onTimeUpdate(newTime)
-            }
-        }
-    }
+    // Timer logic is now handled at the FidanApp level to persist across tabs
     
     val minutes = (timeLeftMillis / 1000) / 60
     val seconds = (timeLeftMillis / 1000) % 60
@@ -237,10 +246,7 @@ fun TimerScreen(
             if (isRunning) {
                 FloatingActionButton(
                     onClick = { 
-                        onRunningChange(false)
-                        if (timeLeftMillis < 25 * 60 * 1000L) {
-                            onSessionStopped()
-                        }
+                        onSessionStopped()
                     },
                     modifier = Modifier.size(80.dp),
                     containerColor = MaterialTheme.colorScheme.error,
@@ -256,9 +262,6 @@ fun TimerScreen(
             } else {
                 FloatingActionButton(
                     onClick = { 
-                        if (timeLeftMillis <= 0) {
-                            onTimeUpdate(25 * 60 * 1000L)
-                        }
                         onRunningChange(true)
                     },
                     modifier = Modifier.size(80.dp),
