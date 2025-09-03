@@ -17,7 +17,7 @@ class SettingsView extends WatchUi.View {
             "soundEnabled" => Properties.getValue("soundEnabled") != false,
             "intervalAlerts" => Properties.getValue("intervalAlerts") != false,
             "sessionDuration" => Properties.getValue("sessionDuration") != null ? 
-                                Properties.getValue("sessionDuration") : 25
+                                Properties.getValue("sessionDuration") : (SessionManager.DEFAULT_SESSION_DURATION / 60)
         };
     }
     

@@ -4,6 +4,8 @@ using Toybox.Time;
 using Toybox.Time.Gregorian;
 
 class StatsView extends WatchUi.View {
+    private const LINE_SPACING = 25;
+    
     private var _sessionManager;
     private var _stats;
 
@@ -65,22 +67,22 @@ class StatsView extends WatchUi.View {
         
         // Today's sessions
         drawStatLine(dc, 20, y, "Today:", _stats["todayCount"].toString() + " sessions");
-        y += 25;
+        y += LINE_SPACING;
         
         // This week
         drawStatLine(dc, 20, y, "Week:", _stats["weekCount"].toString() + " sessions");
-        y += 25;
+        y += LINE_SPACING;
         
         // Total completed
         drawStatLine(dc, 20, y, "Completed:", _stats["completed"].toString() + "/" + _stats["total"].toString());
-        y += 25;
+        y += LINE_SPACING;
         
         // Total focus time
         var hours = _stats["totalTime"] / 3600;
         var minutes = (_stats["totalTime"] % 3600) / 60;
         var timeStr = hours.toString() + "h " + minutes.toString() + "m";
         drawStatLine(dc, 20, y, "Total Time:", timeStr);
-        y += 25;
+        y += LINE_SPACING;
         
         // Success rate
         if (_stats["total"] > 0) {

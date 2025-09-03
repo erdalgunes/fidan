@@ -5,7 +5,11 @@ using Toybox.Time;
 using Toybox.Attention;
 
 class SessionManager {
-    private var SESSION_DURATION = 1500; // 25 minutes in seconds (can be changed via settings)
+    public const DEFAULT_SESSION_DURATION = 1500; // 25 minutes in seconds
+    private const VIBRATION_DURATION = 100; // milliseconds
+    private const VIBRATION_INTENSITY = 25; // vibration strength
+    
+    private var SESSION_DURATION = DEFAULT_SESSION_DURATION; // Can be changed via settings
     private const STORAGE_KEY_SESSION = "current_session";
     private const STORAGE_KEY_HISTORY = "session_history";
     
@@ -99,7 +103,7 @@ class SessionManager {
             if (Properties.getValue("intervalAlerts") != false && 
                 Properties.getValue("vibrationEnabled") != false && 
                 Attention has :vibrate) {
-                var vibePattern = [new Attention.VibeProfile(25, 100)];
+                var vibePattern = [new Attention.VibeProfile(VIBRATION_INTENSITY, VIBRATION_DURATION)];
                 Attention.vibrate(vibePattern);
             }
         }

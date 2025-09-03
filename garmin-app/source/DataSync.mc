@@ -51,7 +51,7 @@ class DataSync {
         var message = {
             "type" => MSG_TYPE_SESSION_COMPLETE,
             "timestamp" => startTime.value(),
-            "duration" => 1500, // 25 minutes
+            "duration" => SessionManager.DEFAULT_SESSION_DURATION,
             "deviceId" => System.getDeviceSettings().uniqueIdentifier
         };
         

@@ -3,6 +3,13 @@ using Toybox.Graphics;
 using Toybox.System;
 
 class AboutView extends WatchUi.View {
+    private const LINE_SPACING_SMALL = 20;
+    private const LINE_SPACING_MEDIUM = 25; 
+    private const LINE_SPACING_LARGE = 30;
+    private const LINE_SPACING_XLARGE = 35;
+    private const FOOTER_MARGIN = 25;
+    private const FOOTER_MARGIN_LARGE = 40;
+    
     function initialize() {
         View.initialize();
     }
@@ -22,25 +29,25 @@ class AboutView extends WatchUi.View {
         // App name and version
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(centerX, y, Graphics.FONT_MEDIUM, "Fidan", Graphics.TEXT_JUSTIFY_CENTER);
-        y += 35;
+        y += LINE_SPACING_XLARGE;
         
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(centerX, y, Graphics.FONT_XTINY, "Version 1.0.0", Graphics.TEXT_JUSTIFY_CENTER);
-        y += 25;
+        y += LINE_SPACING_MEDIUM;
         
         // Description
         dc.drawText(centerX, y, Graphics.FONT_XTINY, "Focus Timer", Graphics.TEXT_JUSTIFY_CENTER);
-        y += 20;
+        y += LINE_SPACING_SMALL;
         dc.drawText(centerX, y, Graphics.FONT_XTINY, "for Productivity", Graphics.TEXT_JUSTIFY_CENTER);
-        y += 30;
+        y += LINE_SPACING_LARGE;
         
         // Tree icon
         drawAboutTree(dc, centerX, y + 20);
         
         // Footer
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, height - 40, Graphics.FONT_XTINY, "Plant trees", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(centerX, height - 25, Graphics.FONT_XTINY, "Stay focused", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(centerX, height - FOOTER_MARGIN_LARGE, Graphics.FONT_XTINY, "Plant trees", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(centerX, height - FOOTER_MARGIN, Graphics.FONT_XTINY, "Stay focused", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function drawAboutTree(dc, x, y) {
