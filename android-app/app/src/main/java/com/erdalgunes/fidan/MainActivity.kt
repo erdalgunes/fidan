@@ -1,21 +1,34 @@
 package com.erdalgunes.fidan
 
+// Android imports
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+
+// AndroidX imports
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.lifecycleScope
+
+// Compose imports
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,28 +36,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.lifecycleScope
+
+// Kotlinx imports
 import kotlinx.coroutines.delay
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.tween
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-import com.erdalgunes.fidan.data.ImpactRepository
+
+// App imports
+import com.erdalgunes.fidan.config.AppConfig
 import com.erdalgunes.fidan.data.ImpactData
+import com.erdalgunes.fidan.data.ImpactRepository
 import com.erdalgunes.fidan.data.Result
 
 class MainActivity : ComponentActivity(), TimerCallback {
@@ -515,8 +523,8 @@ fun ImpactScreen(paddingValues: PaddingValues) {
     val scope = rememberCoroutineScope()
     
     // URLs for external links
-    val githubSponsorsUrl = "https://github.com/sponsors/erdalgunes"
-    val transparencyReportUrl = "https://github.com/erdalgunes/fidan/wiki/Transparency-Report"
+    val githubSponsorsUrl = AppConfig.GITHUB_SPONSORS_URL
+    val transparencyReportUrl = AppConfig.TRANSPARENCY_REPORT_URL
     
     // Load impact data using repository
     LaunchedEffect(Unit) {
@@ -747,7 +755,7 @@ fun ImpactSuccessContent(
                     color = MaterialTheme.colorScheme.primary
                 )
                 
-                TransparencyItem("Total Donations", "${"$%,.2f".format(impactData.totalDonations)}")
+                TransparencyItem("Total Donations", "$%.2f".format(impactData.totalDonations))
                 TransparencyItem("Tree Planting Fund", "75% of proceeds")
                 TransparencyItem("Maintenance Fund", "25% for development")
                 TransparencyItem("Partner Organizations", "${impactData.partnersCount} active")
@@ -873,6 +881,8 @@ fun AnimatedTreeCount(
     targetCount: Int,
     modifier: Modifier = Modifier
 ) {
+    require(targetCount >= 0) { "Tree count must be non-negative" }
+    
     val animatedCount by animateIntAsState(
         targetValue = targetCount,
         animationSpec = tween(durationMillis = 2000),

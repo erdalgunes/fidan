@@ -1,6 +1,8 @@
 package com.erdalgunes.fidan.data
 
 import kotlinx.coroutines.delay
+import com.erdalgunes.fidan.config.NetworkConfig
+import com.erdalgunes.fidan.config.MockData
 
 data class ImpactData(
     val realTreesPlanted: Int,
@@ -22,21 +24,21 @@ class ImpactRepository {
     suspend fun getImpactData(): Result<ImpactData> {
         return try {
             // Simulate network delay
-            delay(1000)
+            delay(NetworkConfig.DEFAULT_TIMEOUT)
             
             // Mock data - replace with real API call
             val data = ImpactData(
-                realTreesPlanted = 1247,
-                totalDonations = 3741.50,
-                partnersCount = 3,
-                lastUpdated = "January 2025",
-                monthlyGrowth = 8.5,
-                certificates = 15
+                realTreesPlanted = MockData.MOCK_TREES_PLANTED,
+                totalDonations = MockData.MOCK_DONATIONS,
+                partnersCount = MockData.MOCK_PARTNERS_COUNT,
+                lastUpdated = MockData.MOCK_LAST_UPDATED,
+                monthlyGrowth = MockData.MOCK_MONTHLY_GROWTH,
+                certificates = MockData.MOCK_CERTIFICATES
             )
             
             Result.Success(data)
         } catch (e: Exception) {
-            Result.Error("Failed to load impact data: ${e.message}")
+            Result.Error("Network timeout. Please check your connection and try again.")
         }
     }
 }
