@@ -48,6 +48,18 @@ class MainActivity : ComponentActivity(), TimerCallback {
         }
     }
     
+    override fun onPause() {
+        super.onPause()
+        // Notify timer manager that app is going to background
+        timerManager.onAppPaused()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Notify timer manager that app is resuming
+        timerManager.onAppResumed()
+    }
+    
     override fun onSessionCompleted() {
         // This will be handled in the Composable through state updates
     }
@@ -55,6 +67,7 @@ class MainActivity : ComponentActivity(), TimerCallback {
     override fun onSessionStopped(wasRunning: Boolean, timeElapsed: Long) {
         // This will be handled in the Composable through state updates
     }
+    
     
     override fun onDestroy() {
         super.onDestroy()
@@ -190,18 +203,39 @@ fun TimerScreen(
                 .size(200.dp)
                 .scale(scale)
                 .clip(CircleShape)
-                .background(Color.White),
+                .background(
+                    when {
+                        timerState.treeWithering -> Color(0xFFFFF3E0)
+                        else -> Color.White
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Show tree emoji based on state
+                Text(
+                    text = when {
+                        timerState.treeWithering -> "🥀"
+                        timerState.isRunning -> "🌱"
+                        else -> "🌱"
+                    },
+                    fontSize = 32.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
                 Text(
                     text = timeText,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = when {
+                        timerState.treeWithering -> Color(0xFFFF9800)
+                        else -> MaterialTheme.colorScheme.primary
+                    }
                 )
                 Text(
-                    text = "Focus Time",
+                    text = when {
+                        timerState.treeWithering -> "Tree Withering"
+                        else -> "Focus Time"
+                    },
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
