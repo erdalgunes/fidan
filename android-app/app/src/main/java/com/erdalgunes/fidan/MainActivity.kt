@@ -37,11 +37,12 @@ import androidx.compose.foundation.rememberScrollState
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
-import com.erdalgunes.fidan.data.ImpactRepository
-import com.erdalgunes.fidan.data.ImpactData
-import com.erdalgunes.fidan.data.Result
-import com.erdalgunes.fidan.config.AppConfig
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -169,7 +170,7 @@ fun FidanApp(timerManager: TimerManager) {
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 },
                     icon = { Text("🌍", fontSize = 20.sp) },
-                    label = { Text(stringResource(R.string.impact_tab_label)) }
+                    label = { Text("Impact") }
                 )
             }
         }
@@ -501,8 +502,16 @@ data class ImpactData(
     val realTreesPlanted: Int,
     val totalDonations: Double,
     val partnersCount: Int,
-    val lastUpdated: String
+    val lastUpdated: String,
+    val monthlyGrowth: Double = 0.0,
+    val certificates: Int = 0
 )
+
+sealed class ImpactUiState {
+    object Loading : ImpactUiState()
+    data class Success(val data: ImpactData) : ImpactUiState()
+    data class Error(val message: String) : ImpactUiState()
+}
 
 @Composable
 fun ImpactScreen(paddingValues: PaddingValues) {
@@ -510,6 +519,9 @@ fun ImpactScreen(paddingValues: PaddingValues) {
     var impactData by remember { mutableStateOf<ImpactData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     
+    // URLs for external links
+    val githubSponsorsUrl = "https://github.com/sponsors/erdalgunes"
+    val transparencyReportUrl = "https://github.com/erdalgunes/fidan/wiki/Transparency-Report"
     
     // Simulate API call to load impact data
     LaunchedEffect(Unit) {
@@ -518,7 +530,9 @@ fun ImpactScreen(paddingValues: PaddingValues) {
             realTreesPlanted = 1247,
             totalDonations = 3741.50,
             partnersCount = 3,
-            lastUpdated = "January 2025"
+            lastUpdated = "January 2025",
+            monthlyGrowth = 8.5,
+            certificates = 15
         )
         isLoading = false
     }
@@ -563,11 +577,11 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                         color = MaterialTheme.colorScheme.primary
                     )
                 } else {
-                    Text(
-                        text = impactData?.realTreesPlanted?.toString() ?: "0",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                    AnimatedTreeCount(
+                        targetCount = impactData?.realTreesPlanted ?: 0,
+                        modifier = Modifier.semantics { 
+                            contentDescription = "Real trees planted counter showing ${impactData?.realTreesPlanted ?: 0} trees" 
+                        }
                     )
                 }
                 Text(
@@ -613,24 +627,25 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 )
                 
                 // Sponsorship Tiers
-                SponsorshipTier(stringResource(R.string.tier_seed), stringResource(R.string.price_seed), stringResource(R.string.benefit_seed))
-                SponsorshipTier(stringResource(R.string.tier_seedling), stringResource(R.string.price_seedling), stringResource(R.string.benefit_seedling))
-                SponsorshipTier(stringResource(R.string.tier_sapling), stringResource(R.string.price_sapling), stringResource(R.string.benefit_sapling))  
-                SponsorshipTier(stringResource(R.string.tier_forest_guardian), stringResource(R.string.price_forest_guardian), stringResource(R.string.benefit_forest_guardian))
+                SponsorshipTier("🌱 Seedling", "$3/month", "1 tree planted")
+                SponsorshipTier("🌿 Sapling", "$10/month", "5 trees planted")  
+                SponsorshipTier("🌳 Forest Guardian", "$25/month", "15 trees planted")
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Button(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.GITHUB_SPONSORS_URL))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubSponsorsUrl))
                         context.startActivity(intent)
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = "Become a sponsor button - opens GitHub sponsors page" },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(stringResource(R.string.become_sponsor))
+                    Text("Become a Sponsor")
                 }
             }
         }
@@ -657,12 +672,13 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                     }
                 } else {
                     impactData?.let { data ->
-                        TransparencyItem("Total Donations", "$${"%.2f".format(data.totalDonations)}")
+                        TransparencyItem("Total Donations", "${"$%,.2f".format(data.totalDonations)}")
                         TransparencyItem("Tree Planting Fund", "75% of proceeds")
                         TransparencyItem("Maintenance Fund", "25% for development")
                         TransparencyItem("Partner Organizations", "${data.partnersCount} active")
+                        TransparencyItem("Monthly Growth", "+${data.monthlyGrowth}%")
+                        TransparencyItem("Planting Certificates", "${data.certificates} verified")
                         TransparencyItem("Last Update", data.lastUpdated)
-                        TransparencyItem("Certificates Available", "View planting proofs")
                     }
                 }
                 
@@ -670,7 +686,7 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 
                 OutlinedButton(
                     onClick = { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AppConfig.TRANSPARENCY_REPORT_URL))
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(transparencyReportUrl))
                         context.startActivity(intent)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -777,6 +793,26 @@ fun PartnerItem(name: String, location: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+fun AnimatedTreeCount(
+    targetCount: Int,
+    modifier: Modifier = Modifier
+) {
+    val animatedCount by animateIntAsState(
+        targetValue = targetCount,
+        animationSpec = tween(durationMillis = 2000),
+        label = "tree_count_animation"
+    )
+    
+    Text(
+        text = animatedCount.toString(),
+        style = MaterialTheme.typography.headlineLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier
+    )
 }
 
 @Preview(showBackground = true)
