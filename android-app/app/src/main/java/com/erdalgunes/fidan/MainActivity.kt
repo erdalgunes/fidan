@@ -30,29 +30,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.lifecycleScope
+import com.erdalgunes.fidan.data.*
+import com.erdalgunes.fidan.forest.*
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
+    private lateinit var forestManager: ForestManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
         timerManager = TimerManager(this, lifecycleScope)
+        forestManager = ForestManager()
+        
+        // Add some sample trees for demo
+        forestManager.addSampleTrees()
         
         setContent {
             FidanTheme {
-                FidanApp(timerManager)
+                FidanApp(timerManager, forestManager)
             }
         }
     }
     
     override fun onSessionCompleted() {
-        // This will be handled in the Composable through state updates
+        // Add tree to forest when session is completed
+        val sessionData = SessionData(
+            taskName = "Focus Session",
+            durationMillis = 25 * 60 * 1000L,
+            completedDate = java.util.Date(),
+            wasCompleted = true
+        )
+        forestManager.addTree(sessionData)
     }
     
     override fun onSessionStopped(wasRunning: Boolean, timeElapsed: Long) {
-        // This will be handled in the Composable through state updates
+        // Add incomplete tree if session was stopped early
+        if (wasRunning && timeElapsed > 0) {
+            val sessionData = SessionData(
+                taskName = "Focus Session (Stopped)",
+                durationMillis = timeElapsed,
+                completedDate = java.util.Date(),
+                wasCompleted = false
+            )
+            forestManager.addTree(sessionData)
+        }
     }
     
     override fun onDestroy() {
@@ -84,7 +107,10 @@ fun FidanTheme(content: @Composable () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FidanApp(timerManager: TimerManager) {
+fun FidanApp(
+    timerManager: TimerManager,
+    forestManager: ForestManager
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var completedTrees by rememberSaveable { mutableIntStateOf(0) }
     var incompleteTrees by rememberSaveable { mutableIntStateOf(0) }
@@ -166,7 +192,7 @@ fun FidanApp(timerManager: TimerManager) {
                     }
                 }
             )
-            1 -> ForestScreen(innerPadding, completedTrees, incompleteTrees)
+            1 -> NewForestScreen(innerPadding, forestManager)
             2 -> StatsScreen(innerPadding, completedTrees, incompleteTrees)
         }
     }
@@ -280,97 +306,109 @@ fun TimerScreen(
 }
 
 @Composable
-fun ForestScreen(
+fun NewForestScreen(
     paddingValues: PaddingValues,
-    completedTrees: Int,
-    incompleteTrees: Int
+    forestManager: ForestManager
 ) {
-    Column(
+    val forestState by forestManager.forestState.collectAsState()
+    var selectedTree by remember { mutableStateOf<Tree?>(null) }
+    
+    // Update day/night cycle periodically
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(60000) // Update every minute
+            forestManager.updateDayNightCycle()
+        }
+    }
+    
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFE8F5E9)
-            )
-        ) {
+        if (forestState.trees.isEmpty()) {
+            // Empty state
             Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // Show forest visualization
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                ) {
-                    // Show completed trees
-                    repeat(completedTrees) {
-                        Text(
-                            text = "🌳",
-                            fontSize = 36.sp,
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                    }
-                    // Show incomplete trees (stubs)
-                    repeat(incompleteTrees) {
-                        Text(
-                            text = "🌱",
-                            fontSize = 36.sp,
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                    }
-                    // Show placeholder if no trees yet
-                    if (completedTrees == 0 && incompleteTrees == 0) {
-                        Text(
-                            text = "🏞️",
-                            fontSize = 72.sp
-                        )
-                    }
-                }
-                
                 Text(
-                    text = "Your Forest",
+                    text = "🏞️",
+                    fontSize = 72.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Your Forest Awaits",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "$completedTrees 🌳 Full Trees",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    if (incompleteTrees > 0) {
-                        Text(
-                            text = "$incompleteTrees 🌱 Seedlings (incomplete)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = if (completedTrees == 0 && incompleteTrees == 0) {
-                        "Complete focus sessions to grow your virtual forest!"
-                    } else {
-                        "Keep focusing to grow more trees!"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Complete focus sessions to grow your virtual forest!",
+                    style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        } else {
+            // Forest canvas
+            ForestCanvas(
+                forestState = forestState,
+                onTreeTapped = { tree -> selectedTree = tree },
+                onPanAndZoom = { offsetX, offsetY, scale ->
+                    forestManager.updatePanAndZoom(offsetX, offsetY, scale)
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+            
+            // Forest info overlay
+            Card(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    val completedTrees = forestState.trees.count { it.sessionData.wasCompleted }
+                    val incompleteTrees = forestState.trees.count { !it.sessionData.wasCompleted }
+                    
+                    Text(
+                        text = if (forestState.isDayTime) "☀️ Day" else "🌙 Night",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "🌳 $completedTrees trees",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (incompleteTrees > 0) {
+                        Text(
+                            text = "🌱 $incompleteTrees saplings",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Tree detail dialog
+        selectedTree?.let { tree ->
+            TreeDetailDialog(
+                tree = tree,
+                onDismiss = { selectedTree = null }
+            )
         }
     }
 }
