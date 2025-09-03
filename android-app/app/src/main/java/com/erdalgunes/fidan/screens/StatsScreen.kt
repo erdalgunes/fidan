@@ -1,0 +1,189 @@
+package com.erdalgunes.fidan.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.slack.circuit.runtime.CircuitContext
+import com.slack.circuit.runtime.CircuitUiState
+import com.slack.circuit.runtime.Navigator
+import com.slack.circuit.runtime.presenter.Presenter
+import com.slack.circuit.runtime.screen.Screen
+import com.slack.circuit.runtime.ui.Ui
+import kotlinx.parcelize.Parcelize
+import javax.inject.Inject
+
+@Parcelize
+object StatsScreen : Screen
+
+data class StatsState(
+    val completedTrees: Int = 0,
+    val incompleteTrees: Int = 0,
+    val totalSessions: Int = 0,
+    val totalFocusTime: String = "0h 0m",
+    val completionRate: String = "0%"
+) : CircuitUiState
+
+class StatsPresenter @Inject constructor() : Presenter<StatsState> {
+    
+    @Composable
+    override fun present(): StatsState {
+        // In a real app, this would come from a repository or data store
+        // For now, using placeholder values
+        val completedTrees = 3
+        val incompleteTrees = 1
+        val totalSessions = completedTrees + incompleteTrees
+        val totalFocusMinutes = completedTrees * 25 // 25 minutes per completed session
+        val hours = totalFocusMinutes / 60
+        val minutes = totalFocusMinutes % 60
+        val totalFocusTime = "${hours}h ${minutes}m"
+        val completionRate = if (totalSessions > 0) {
+            "${(completedTrees * 100 / totalSessions)}%"
+        } else "0%"
+        
+        return StatsState(
+            completedTrees = completedTrees,
+            incompleteTrees = incompleteTrees,
+            totalSessions = totalSessions,
+            totalFocusTime = totalFocusTime,
+            completionRate = completionRate
+        )
+    }
+}
+
+class StatsUi @Inject constructor() : Ui<StatsState> {
+    
+    @Composable
+    override fun Content(state: StatsState, modifier: Modifier) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "📊 Your Progress",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 32.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = "${state.completedTrees}",
+                    subtitle = "Completed Trees",
+                    icon = "🌳",
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = "${state.incompleteTrees}",
+                    subtitle = "Incomplete Sessions",
+                    icon = "🌱",
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = state.totalFocusTime,
+                    subtitle = "Total Time",
+                    icon = "⏱️",
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+                
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    title = state.completionRate,
+                    subtitle = "Completion Rate",
+                    icon = "🎯",
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+    
+    @Composable
+    private fun StatCard(
+        modifier: Modifier = Modifier,
+        title: String,
+        subtitle: String,
+        icon: String,
+        color: androidx.compose.ui.graphics.Color
+    ) {
+        Card(
+            modifier = modifier,
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = color.copy(alpha = 0.1f)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = icon,
+                    fontSize = 32.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+class StatsPresenterFactory @Inject constructor(
+    private val presenter: StatsPresenter
+) : Presenter.Factory {
+    override fun create(
+        screen: Screen,
+        navigator: Navigator,
+        context: CircuitContext
+    ): Presenter<*>? {
+        return when (screen) {
+            is StatsScreen -> presenter
+            else -> null
+        }
+    }
+}
+
+class StatsUiFactory @Inject constructor(
+    private val ui: StatsUi
+) : Ui.Factory {
+    override fun create(screen: Screen, context: CircuitContext): Ui<*>? {
+        return when (screen) {
+            is StatsScreen -> ui
+            else -> null
+        }
+    }
+}

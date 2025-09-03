@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
     kotlin("plugin.serialization") version "1.9.20"
+    id("kotlin-kapt")
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -67,7 +69,9 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     
-    // Hilt - removed for simplified build
+    // Hilt for dependency injection
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
     
     // Core Android
     implementation(libs.androidx.core.ktx)
@@ -87,11 +91,11 @@ dependencies {
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     
-    // Circuit - commented out, using simpler approach
-    // implementation(libs.circuit.foundation)
-    // implementation(libs.circuit.overlay)
-    // implementation(libs.circuit.retained)
-    // implementation(libs.circuit.codegen.annotations)
+    // Circuit for state management and navigation
+    implementation(libs.circuit.foundation)
+    implementation(libs.circuit.overlay)
+    implementation(libs.circuit.retained)
+    implementation(libs.circuit.codegen.annotations)
     // Accompanist - removed for simplified build
     
     // Testing
