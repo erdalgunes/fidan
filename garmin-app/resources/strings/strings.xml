@@ -1,0 +1,12 @@
+<strings>
+    <string id="AppName">Fidan Focus</string>
+    <string id="AppDescription">Pomodoro timer with virtual tree growing</string>
+    <string id="SessionStart">Focus session started</string>
+    <string id="SessionComplete">Great job! Tree grown!</string>
+    <string id="SessionStopped">Session stopped</string>
+    <string id="TapToStart">Tap to start focus</string>
+    <string id="FocusMode">Focus Mode</string>
+    <string id="Statistics">Statistics</string>
+    <string id="Settings">Settings</string>
+    <string id="About">About</string>
+</strings>

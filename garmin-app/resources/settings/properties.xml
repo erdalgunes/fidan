@@ -1,0 +1,6 @@
+<properties>
+    <property id="sessionDuration" type="number">25</property>
+    <property id="vibrationEnabled" type="boolean">true</property>
+    <property id="soundEnabled" type="boolean">true</property>
+    <property id="autoSync" type="boolean">true</property>
+</properties>
