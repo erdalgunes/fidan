@@ -26,13 +26,10 @@ class FidanDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onBack() {
-        if (_sessionManager.isActive()) {
-            // Don't exit if session is active, show warning instead
-            var dialog = new WatchUi.Confirmation("Session in progress. Exit anyway?");
-            WatchUi.pushView(dialog, new ExitConfirmationDelegate(), WatchUi.SLIDE_IMMEDIATE);
-            return true;
-        }
-        return false;
+        // Allow back button to exit to watch face
+        // Timer continues running in background if active
+        // State is already saved by SessionManager
+        return false;  // Let system handle back button normally
     }
 
     function onMenu() {
@@ -62,17 +59,7 @@ class StopConfirmationDelegate extends WatchUi.ConfirmationDelegate {
     }
 }
 
-class ExitConfirmationDelegate extends WatchUi.ConfirmationDelegate {
-    function initialize() {
-        ConfirmationDelegate.initialize();
-    }
-
-    function onResponse(response) {
-        if (response == WatchUi.CONFIRM_YES) {
-            WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
-        }
-    }
-}
+// ExitConfirmationDelegate no longer needed - app exits normally with background timer
 
 class MenuDelegate extends WatchUi.Menu2InputDelegate {
     private var _sessionManager;

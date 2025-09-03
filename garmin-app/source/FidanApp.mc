@@ -2,6 +2,8 @@ using Toybox.Application;
 using Toybox.WatchUi;
 using Toybox.Timer;
 using Toybox.Attention;
+using Toybox.Background;
+using Toybox.Time;
 
 class FidanApp extends Application.AppBase {
     private var _sessionManager;
@@ -15,6 +17,12 @@ class FidanApp extends Application.AppBase {
 
     function onStart(state) {
         _dataSync.initialize();
+        
+        // Register for background temporal events
+        // This keeps the app alive in background for timer updates
+        if (Background has :registerForTemporalEvent) {
+            Background.registerForTemporalEvent(new Time.Duration(60)); // Check every minute
+        }
     }
 
     function onStop(state) {
