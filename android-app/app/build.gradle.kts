@@ -81,7 +81,11 @@ dependencies {
     implementation(libs.androidx.compose.material.iconsExtended)
     implementation(libs.androidx.lifecycle.runtimeCompose)
     
-    // Circuit - removed for simplified build
+    // Circuit - commented out, using simpler approach
+    // implementation(libs.circuit.foundation)
+    // implementation(libs.circuit.overlay)
+    // implementation(libs.circuit.retained)
+    // implementation(libs.circuit.codegen.annotations)
     // Accompanist - removed for simplified build
     
     // Testing

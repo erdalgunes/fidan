@@ -12,10 +12,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +68,12 @@ fun FidanTheme(content: @Composable () -> Unit) {
 @Composable
 fun FidanApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var completedTrees by rememberSaveable { mutableIntStateOf(0) }
+    var incompleteTrees by rememberSaveable { mutableIntStateOf(0) }
+    
+    // Timer state persisted across tab changes
+    var isRunning by rememberSaveable { mutableStateOf(false) }
+    var timeLeftMillis by rememberSaveable { mutableLongStateOf(25 * 60 * 1000L) }
     
     Scaffold(
         topBar = {
@@ -126,18 +133,37 @@ fun FidanApp() {
         }
     ) { innerPadding ->
         when (selectedTab) {
-            0 -> TimerScreen(innerPadding)
-            1 -> ForestScreen(innerPadding)
-            2 -> StatsScreen(innerPadding)
+            0 -> TimerScreen(
+                paddingValues = innerPadding,
+                timeLeftMillis = timeLeftMillis,
+                isRunning = isRunning,
+                onTimeUpdate = { timeLeftMillis = it },
+                onRunningChange = { isRunning = it },
+                onSessionComplete = { 
+                    completedTrees++
+                    timeLeftMillis = 25 * 60 * 1000L
+                },
+                onSessionStopped = { 
+                    incompleteTrees++
+                    timeLeftMillis = 25 * 60 * 1000L
+                }
+            )
+            1 -> ForestScreen(innerPadding, completedTrees, incompleteTrees)
+            2 -> StatsScreen(innerPadding, completedTrees, incompleteTrees)
         }
     }
 }
 
 @Composable
-fun TimerScreen(paddingValues: PaddingValues) {
-    var isRunning by remember { mutableStateOf(false) }
-    var timeLeftMillis by remember { mutableLongStateOf(25 * 60 * 1000L) } // 25 minutes
-    
+fun TimerScreen(
+    paddingValues: PaddingValues,
+    timeLeftMillis: Long,
+    isRunning: Boolean,
+    onTimeUpdate: (Long) -> Unit,
+    onRunningChange: (Boolean) -> Unit,
+    onSessionComplete: () -> Unit,
+    onSessionStopped: () -> Unit
+) {
     val scale by animateFloatAsState(
         targetValue = if (isRunning) 1.1f else 1f,
         animationSpec = tween(300),
@@ -148,16 +174,16 @@ fun TimerScreen(paddingValues: PaddingValues) {
     LaunchedEffect(isRunning) {
         if (isRunning && timeLeftMillis > 0) {
             while (isRunning && timeLeftMillis > 0) {
-                delay(1000) // Update every second
-                timeLeftMillis -= 1000
+                delay(1000)
+                onTimeUpdate(timeLeftMillis - 1000)
             }
-            if (timeLeftMillis <= 0) {
-                isRunning = false
+            if (timeLeftMillis <= 1000) {
+                onRunningChange(false)
+                onSessionComplete()
             }
         }
     }
     
-    // Format time as MM:SS
     val minutes = (timeLeftMillis / 1000) / 60
     val seconds = (timeLeftMillis / 1000) % 60
     val timeText = String.format("%02d:%02d", minutes, seconds)
@@ -203,31 +229,59 @@ fun TimerScreen(paddingValues: PaddingValues) {
         
         Spacer(modifier = Modifier.height(40.dp))
         
-        // Start/Pause Button
-        FloatingActionButton(
-            onClick = { 
-                if (timeLeftMillis <= 0) {
-                    // Reset timer
-                    timeLeftMillis = 25 * 60 * 1000L
-                }
-                isRunning = !isRunning 
-            },
-            modifier = Modifier.size(80.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            shape = CircleShape
+        // Start and Stop Buttons
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Icon(
-                if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isRunning) "Pause" else "Start",
-                modifier = Modifier.size(40.dp),
-                tint = Color.White
-            )
+            if (isRunning) {
+                FloatingActionButton(
+                    onClick = { 
+                        onRunningChange(false)
+                        if (timeLeftMillis < 25 * 60 * 1000L) {
+                            onSessionStopped()
+                        }
+                    },
+                    modifier = Modifier.size(80.dp),
+                    containerColor = MaterialTheme.colorScheme.error,
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        Icons.Default.Stop,
+                        contentDescription = "Stop",
+                        modifier = Modifier.size(40.dp),
+                        tint = Color.White
+                    )
+                }
+            } else {
+                FloatingActionButton(
+                    onClick = { 
+                        if (timeLeftMillis <= 0) {
+                            onTimeUpdate(25 * 60 * 1000L)
+                        }
+                        onRunningChange(true)
+                    },
+                    modifier = Modifier.size(80.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = "Start",
+                        modifier = Modifier.size(40.dp),
+                        tint = Color.White
+                    )
+                }
+            }
         }
         
         Spacer(modifier = Modifier.height(20.dp))
         
         Text(
-            text = if (isRunning) "Focus on your task!" else if (timeLeftMillis <= 0) "Session complete!" else "Ready to focus?",
+            text = when {
+                isRunning -> "Focus on your task!"
+                timeLeftMillis <= 0 -> "Session complete!"
+                else -> "Ready to focus?"
+            },
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -235,7 +289,11 @@ fun TimerScreen(paddingValues: PaddingValues) {
 }
 
 @Composable
-fun ForestScreen(paddingValues: PaddingValues) {
+fun ForestScreen(
+    paddingValues: PaddingValues,
+    completedTrees: Int,
+    incompleteTrees: Int
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -255,11 +313,36 @@ fun ForestScreen(paddingValues: PaddingValues) {
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "🌳",
-                    fontSize = 72.sp,
+                // Show forest visualization
+                Row(
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.padding(bottom = 16.dp)
-                )
+                ) {
+                    // Show completed trees
+                    repeat(completedTrees) {
+                        Text(
+                            text = "🌳",
+                            fontSize = 36.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                    // Show incomplete trees (stubs)
+                    repeat(incompleteTrees) {
+                        Text(
+                            text = "🌱",
+                            fontSize = 36.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                    // Show placeholder if no trees yet
+                    if (completedTrees == 0 && incompleteTrees == 0) {
+                        Text(
+                            text = "🏞️",
+                            fontSize = 72.sp
+                        )
+                    }
+                }
+                
                 Text(
                     text = "Your Forest",
                     style = MaterialTheme.typography.headlineMedium,
@@ -267,14 +350,31 @@ fun ForestScreen(paddingValues: PaddingValues) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "0 Trees Planted",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "$completedTrees 🌳 Full Trees",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (incompleteTrees > 0) {
+                        Text(
+                            text = "$incompleteTrees 🌱 Seedlings (incomplete)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Complete focus sessions to grow your virtual forest!",
+                    text = if (completedTrees == 0 && incompleteTrees == 0) {
+                        "Complete focus sessions to grow your virtual forest!"
+                    } else {
+                        "Keep focusing to grow more trees!"
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -285,7 +385,16 @@ fun ForestScreen(paddingValues: PaddingValues) {
 }
 
 @Composable
-fun StatsScreen(paddingValues: PaddingValues) {
+fun StatsScreen(
+    paddingValues: PaddingValues,
+    completedTrees: Int,
+    incompleteTrees: Int
+) {
+    val totalSessions = completedTrees + incompleteTrees
+    val completionRate = if (totalSessions > 0) {
+        (completedTrees * 100) / totalSessions
+    } else 0
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -324,13 +433,13 @@ fun StatsScreen(paddingValues: PaddingValues) {
         ) {
             StatCard(
                 title = "Sessions",
-                value = "0",
+                value = "$completedTrees",
                 subtitle = "Completed"
             )
             StatCard(
-                title = "Streak",
-                value = "0",
-                subtitle = "Days"
+                title = "Success",
+                value = "$completionRate%",
+                subtitle = "Completion Rate"
             )
         }
     }
