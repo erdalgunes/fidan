@@ -35,7 +35,11 @@ class GarminSyncService : Service() {
         
         fun startService(context: Context) {
             val intent = Intent(context, GarminSyncService::class.java)
-            context.startForegroundService(intent)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
         
         fun stopService(context: Context) {
@@ -124,31 +128,33 @@ class GarminSyncService : Service() {
     }
     
     private fun createNotificationChannel() {
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        
-        // Service notification channel (low importance, no sound)
-        val serviceChannel = NotificationChannel(
-            CHANNEL_ID,
-            "Garmin Sync Service",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "Background sync with Garmin watch"
-            setShowBadge(false)
-            setSound(null, null)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            
+            // Service notification channel (low importance, no sound)
+            val serviceChannel = NotificationChannel(
+                CHANNEL_ID,
+                "Garmin Sync Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Background sync with Garmin watch"
+                setShowBadge(false)
+                setSound(null, null)
+            }
+            
+            // Sync notification channel (default importance, with sound)
+            val syncChannel = NotificationChannel(
+                SYNC_CHANNEL_ID,
+                "Watch Session Sync",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications when watch sessions are synced"
+                setShowBadge(true)
+            }
+            
+            notificationManager.createNotificationChannel(serviceChannel)
+            notificationManager.createNotificationChannel(syncChannel)
         }
-        
-        // Sync notification channel (default importance, with sound)
-        val syncChannel = NotificationChannel(
-            SYNC_CHANNEL_ID,
-            "Watch Session Sync",
-            NotificationManager.IMPORTANCE_DEFAULT
-        ).apply {
-            description = "Notifications when watch sessions are synced"
-            setShowBadge(true)
-        }
-        
-        notificationManager.createNotificationChannel(serviceChannel)
-        notificationManager.createNotificationChannel(syncChannel)
     }
     
     private fun createNotification(): Notification {
