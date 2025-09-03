@@ -30,9 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
@@ -488,11 +492,34 @@ fun StatCard(
     }
 }
 
+data class ImpactData(
+    val realTreesPlanted: Int,
+    val totalDonations: Double,
+    val partnersCount: Int,
+    val lastUpdated: String
+)
+
 @Composable
 fun ImpactScreen(paddingValues: PaddingValues) {
-    val realTreesPlanted = 1247 // Mock data - would come from API
-    val totalDonations = 3741.50 // Mock data - would come from GitHub Sponsors API
-    val partnersCount = 3
+    val context = LocalContext.current
+    var impactData by remember { mutableStateOf<ImpactData?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    // URLs for external links
+    val githubSponsorsUrl = "https://github.com/sponsors/erdalgunes"
+    val transparencyReportUrl = "https://github.com/erdalgunes/fidan/wiki/Transparency-Report"
+    
+    // Simulate API call to load impact data
+    LaunchedEffect(Unit) {
+        delay(1000) // Simulate network delay
+        impactData = ImpactData(
+            realTreesPlanted = 1247,
+            totalDonations = 3741.50,
+            partnersCount = 3,
+            lastUpdated = "January 2025"
+        )
+        isLoading = false
+    }
     
     Column(
         modifier = Modifier
@@ -528,12 +555,19 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                     fontSize = 48.sp,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Text(
-                    text = realTreesPlanted.toString(),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = impactData?.realTreesPlanted?.toString() ?: "0",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Text(
                     text = "Real Trees Planted",
                     style = MaterialTheme.typography.bodyLarge,
@@ -584,7 +618,10 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Button(
-                    onClick = { /* TODO: Open GitHub Sponsors */ },
+                    onClick = { 
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(githubSponsorsUrl))
+                        context.startActivity(intent)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
@@ -611,17 +648,28 @@ fun ImpactScreen(paddingValues: PaddingValues) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 
-                TransparencyItem("Total Donations", "$${"%.2f".format(totalDonations)}")
-                TransparencyItem("Tree Planting Fund", "75% of proceeds")
-                TransparencyItem("Maintenance Fund", "25% for development")
-                TransparencyItem("Partner Organizations", "$partnersCount active")
-                TransparencyItem("Last Update", "January 2025")
-                TransparencyItem("Certificates Available", "View planting proofs")
+                if (isLoading) {
+                    repeat(6) {
+                        TransparencyItem("Loading...", "---")
+                    }
+                } else {
+                    impactData?.let { data ->
+                        TransparencyItem("Total Donations", "$${"%.2f".format(data.totalDonations)}")
+                        TransparencyItem("Tree Planting Fund", "75% of proceeds")
+                        TransparencyItem("Maintenance Fund", "25% for development")
+                        TransparencyItem("Partner Organizations", "${data.partnersCount} active")
+                        TransparencyItem("Last Update", data.lastUpdated)
+                        TransparencyItem("Certificates Available", "View planting proofs")
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 OutlinedButton(
-                    onClick = { /* TODO: Open transparency report */ },
+                    onClick = { 
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(transparencyReportUrl))
+                        context.startActivity(intent)
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("View Monthly Report")
