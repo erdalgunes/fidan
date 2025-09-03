@@ -1,0 +1,53 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Tree trunk -->
+    <path
+        android:fillColor="#795548"
+        android:pathData="M50,65 L50,75 Q50,78 54,78 Q58,78 58,75 L58,65 z"/>
+    
+    <!-- Tree crown - bottom/main circle -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M54,35 A18,18 0 1,1 54,65 A18,18 0 1,1 54,35z"/>
+    
+    <!-- Tree crown - left circle for fuller look -->
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M42,42 A13,13 0 1,1 42,63 A13,13 0 1,1 42,42z"/>
+    
+    <!-- Tree crown - right circle -->
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M66,42 A13,13 0 1,1 66,63 A13,13 0 1,1 66,42z"/>
+    
+    <!-- Tree crown - top circle for height -->
+    <path
+        android:fillColor="#81C784"
+        android:pathData="M54,32 A14,14 0 1,1 54,52 A14,14 0 1,1 54,32z"/>
+    
+    <!-- Highlight on top for depth -->
+    <path
+        android:fillColor="#A5D6A7"
+        android:pathData="M54,33 A10,10 0 0,1 54,43 A10,10 0 0,1 54,33z"/>
+    
+    <!-- Small branches/details -->
+    <path
+        android:fillColor="#2E7D32"
+        android:strokeColor="#2E7D32"
+        android:strokeWidth="1"
+        android:pathData="M45,42 L47,38"/>
+    <path
+        android:fillColor="#2E7D32"
+        android:strokeColor="#2E7D32"
+        android:strokeWidth="1"
+        android:pathData="M63,42 L61,38"/>
+    <path
+        android:fillColor="#2E7D32"
+        android:strokeColor="#2E7D32"
+        android:strokeWidth="1"
+        android:pathData="M54,48 L54,44"/>
+</vector>

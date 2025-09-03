@@ -64,6 +64,7 @@ android {
 dependencies {
     // BOM for Compose
     implementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     
     // Hilt - removed for simplified build
     
@@ -81,14 +82,21 @@ dependencies {
     implementation(libs.androidx.compose.material.iconsExtended)
     implementation(libs.androidx.lifecycle.runtimeCompose)
     
-    // Circuit - removed for simplified build
+    // Circuit - commented out, using simpler approach
+    // implementation(libs.circuit.foundation)
+    // implementation(libs.circuit.overlay)
+    // implementation(libs.circuit.retained)
+    // implementation(libs.circuit.codegen.annotations)
     // Accompanist - removed for simplified build
     
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    // androidTestImplementation(libs.androidx.compose.ui.test) - temporarily removed
-    // debugImplementation(libs.androidx.compose.ui.testManifest) - temporarily removed
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
