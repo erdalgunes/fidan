@@ -66,42 +66,6 @@ fun VectorTree(
                 .alpha(tree.maintenanceState.healthLevel),
             colorFilter = ColorFilter.tint(getTreeColor(tree))
         )
-        
-        // Maintenance indicators overlay
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(4.dp),
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.Top
-        ) {
-            if (tree.maintenanceState.needsWatering) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_impact), // Water drop icon
-                    contentDescription = "Needs watering",
-                    modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(Color(0xFF2196F3))
-                )
-            }
-            if (tree.maintenanceState.hasWeeds) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Image(
-                    painter = painterResource(id = R.drawable.ic_settings), // Weed icon
-                    contentDescription = "Has weeds",
-                    modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(Color(0xFF795548))
-                )
-            }
-            if (tree.maintenanceState.hasPests) {
-                Spacer(modifier = Modifier.height(2.dp))
-                Image(
-                    painter = painterResource(id = R.drawable.ic_stats), // Bug icon
-                    contentDescription = "Has pests",
-                    modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(Color(0xFFFF5252))
-                )
-            }
-        }
     }
 }
 
