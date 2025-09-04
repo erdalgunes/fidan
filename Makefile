@@ -18,8 +18,11 @@ help:
 	@echo ""
 	@echo "Android-specific:"
 	@echo "  make android-build   - Build Android debug APK"
-	@echo "  make android-release - Build Android release APK"
+	@echo "  make android-release - Build Android release APK" 
 	@echo "  make android-install - Install debug APK on device"
+	@echo ""
+	@echo "Deployment:"
+	@echo "  make deploy-android - Build & install Android app"
 	@echo ""
 
 # Main preflight check
@@ -76,6 +79,13 @@ android-release:
 android-install:
 	@echo "Installing debug APK on device..."
 	@cd android-app && ./gradlew installDebug
+
+# Deployment
+deploy-android:
+	@bash scripts/deploy-android.sh
+
+deploy-android-release:
+	@bash scripts/deploy-android.sh release
 
 # Format code
 format:
