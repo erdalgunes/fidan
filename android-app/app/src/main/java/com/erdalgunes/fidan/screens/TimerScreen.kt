@@ -35,6 +35,7 @@ data class TimerState(
     val sessionCompleted: Boolean = false,
     val treeWithering: Boolean = false,
     val statusMessage: String = "Ready to focus",
+    val currentTask: com.erdalgunes.fidan.data.ActiveMaintenanceTask? = null,
     val onStartStop: () -> Unit = {},
     val onSessionStopped: () -> Unit = {}
 ) : CircuitUiState
@@ -54,6 +55,7 @@ class TimerPresenter @Inject constructor(
             sessionCompleted = timerState.sessionCompleted,
             treeWithering = timerState.treeWithering,
             statusMessage = timerService.getStatusMessage(),
+            currentTask = timerService.getCurrentMaintenanceTask(),
             onStartStop = {
                 if (timerState.isRunning) {
                     TimerForegroundService.stopService(context)
@@ -90,6 +92,53 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly  // Better distribution
         ) {
+            // Current maintenance task display
+            state.currentTask?.let { task ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = task.task.emoji,
+                            fontSize = 32.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        Text(
+                            text = task.task.displayName,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = task.task.description,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        
+                        // Urgency indicator
+                        if (task.urgency > 0.7f) {
+                            Text(
+                                text = "🔥 Urgent",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Minimalist timer display - focus on the essentials
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -108,10 +157,10 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
                 // Simple status indicator
                 Text(
                     text = when {
-                        state.sessionCompleted -> "Session Complete"
+                        state.sessionCompleted -> if (state.currentTask != null) "Task Complete! ✨" else "Session Complete"
                         state.treeWithering -> "Focus Lost"
-                        state.isRunning -> "Focusing"
-                        else -> "Ready"
+                        state.isRunning -> if (state.currentTask != null) "Maintaining..." else "Focusing"
+                        else -> if (state.currentTask != null) "Ready to Help" else "Ready"
                     },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Normal,
@@ -142,6 +191,7 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
                     text = when {
                         state.sessionCompleted -> "New Session"
                         state.isRunning -> "Stop"
+                        state.currentTask != null -> "Start ${state.currentTask.task.displayName}"
                         else -> "Start Focus"
                     },
                     fontSize = 18.sp,
