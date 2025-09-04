@@ -9,7 +9,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.erdalgunes.fidan.data.*
 import com.erdalgunes.fidan.ui.components.AnimatedTree
-import com.erdalgunes.fidan.ui.components.SimpleTree
 import com.erdalgunes.fidan.ui.components.PerformanceLevel
 import com.erdalgunes.fidan.ui.theme.FidanTheme
 import java.util.*
