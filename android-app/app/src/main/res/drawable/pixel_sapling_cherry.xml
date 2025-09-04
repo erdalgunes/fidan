@@ -1,0 +1,45 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    
+    <!-- Oak sapling with characteristic rounded crown -->
+    <!-- Trunk -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M15,17 h2v1 h-2z
+                         M15,18 h2v1 h-2z
+                         M15,19 h2v1 h-2z
+                         M15,20 h2v1 h-2z
+                         M15,21 h2v1 h-2z
+                         M15,22 h2v1 h-2z"/>
+    
+    <!-- Oak crown - rounded shape -->
+    <path
+        android:fillColor="#558B2F"
+        android:pathData="M14,9 h4v1 h-4z
+                         M12,10 h8v1 h-8z
+                         M11,11 h10v1 h-10z
+                         M11,12 h10v1 h-10z
+                         M11,13 h10v1 h-10z
+                         M12,14 h8v1 h-8z
+                         M12,15 h8v1 h-8z
+                         M13,16 h6v1 h-6z"/>
+    
+    <!-- Oak leaf details -->
+    <path
+        android:fillColor="#689F38"
+        android:pathData="M13,10 h3v1 h-3z
+                         M12,11 h2v1 h-2z
+                         M18,11 h2v1 h-2z
+                         M14,12 h1v1 h-1z
+                         M17,13 h2v1 h-2z
+                         M13,14 h2v1 h-2z"/>
+    
+    <!-- Ground -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M12,23 h8v1 h-8z
+                         M11,24 h10v1 h-10z"/>
+</vector>

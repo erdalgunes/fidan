@@ -1,0 +1,63 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    
+    <!-- Young oak tree -->
+    <!-- Trunk -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M14,15 h4v1 h-4z
+                         M14,16 h4v1 h-4z
+                         M14,17 h4v1 h-4z
+                         M14,18 h4v1 h-4z
+                         M14,19 h4v1 h-4z
+                         M14,20 h4v1 h-4z
+                         M15,21 h2v1 h-2z
+                         M15,22 h2v1 h-2z"/>
+    
+    <!-- Trunk shadow -->
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M14,16 h1v1 h-1z
+                         M14,18 h1v1 h-1z
+                         M14,20 h1v1 h-1z"/>
+    
+    <!-- Oak crown - fuller -->
+    <path
+        android:fillColor="#558B2F"
+        android:pathData="M13,6 h6v1 h-6z
+                         M11,7 h10v1 h-10z
+                         M10,8 h12v1 h-12z
+                         M9,9 h14v1 h-14z
+                         M9,10 h14v1 h-14z
+                         M9,11 h14v1 h-14z
+                         M10,12 h12v1 h-12z
+                         M10,13 h12v1 h-12z
+                         M11,14 h10v1 h-10z"/>
+    
+    <!-- Leaf clusters -->
+    <path
+        android:fillColor="#689F38"
+        android:pathData="M12,7 h3v1 h-3z
+                         M17,7 h3v1 h-3z
+                         M10,9 h2v1 h-2z
+                         M20,9 h2v1 h-2z
+                         M14,10 h2v1 h-2z
+                         M11,11 h3v1 h-3z
+                         M18,12 h3v1 h-3z"/>
+    
+    <!-- Highlights -->
+    <path
+        android:fillColor="#8BC34A"
+        android:pathData="M14,8 h1v1 h-1z
+                         M18,9 h1v1 h-1z
+                         M12,10 h1v1 h-1z"/>
+    
+    <!-- Ground -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M11,23 h10v1 h-10z
+                         M10,24 h12v1 h-12z"/>
+</vector>

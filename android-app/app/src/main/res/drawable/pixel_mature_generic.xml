@@ -1,0 +1,75 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    
+    <!-- Mature oak tree - full size -->
+    <!-- Thick trunk -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M13,14 h6v1 h-6z
+                         M13,15 h6v1 h-6z
+                         M13,16 h6v1 h-6z
+                         M13,17 h6v1 h-6z
+                         M13,18 h6v1 h-6z
+                         M13,19 h6v1 h-6z
+                         M14,20 h4v1 h-4z
+                         M14,21 h4v1 h-4z
+                         M15,22 h2v1 h-2z"/>
+    
+    <!-- Trunk texture -->
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M13,15 h1v1 h-1z
+                         M18,16 h1v1 h-1z
+                         M13,17 h1v1 h-1z
+                         M14,19 h1v1 h-1z
+                         M17,20 h1v1 h-1z"/>
+    
+    <!-- Large oak crown -->
+    <path
+        android:fillColor="#558B2F"
+        android:pathData="M12,3 h8v1 h-8z
+                         M10,4 h12v1 h-12z
+                         M8,5 h16v1 h-16z
+                         M7,6 h18v1 h-18z
+                         M6,7 h20v1 h-20z
+                         M6,8 h20v1 h-20z
+                         M6,9 h20v1 h-20z
+                         M7,10 h18v1 h-18z
+                         M7,11 h18v1 h-18z
+                         M8,12 h16v1 h-16z
+                         M9,13 h14v1 h-14z"/>
+    
+    <!-- Leaf detail layers -->
+    <path
+        android:fillColor="#689F38"
+        android:pathData="M11,4 h4v1 h-4z
+                         M17,4 h3v1 h-3z
+                         M8,6 h3v1 h-3z
+                         M20,6 h4v1 h-4z
+                         M12,7 h2v1 h-2z
+                         M18,7 h3v1 h-3z
+                         M7,8 h2v1 h-2z
+                         M14,9 h3v1 h-3z
+                         M22,9 h2v1 h-2z
+                         M9,10 h3v1 h-3z
+                         M19,11 h4v1 h-4z
+                         M10,12 h2v1 h-2z"/>
+    
+    <!-- Bright highlights -->
+    <path
+        android:fillColor="#8BC34A"
+        android:pathData="M14,5 h1v1 h-1z
+                         M10,7 h1v1 h-1z
+                         M19,8 h1v1 h-1z
+                         M12,10 h1v1 h-1z"/>
+    
+    <!-- Ground -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M10,23 h12v1 h-12z
+                         M9,24 h14v1 h-14z
+                         M8,25 h16v1 h-16z"/>
+</vector>
