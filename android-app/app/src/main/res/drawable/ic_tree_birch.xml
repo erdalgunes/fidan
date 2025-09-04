@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Slender birch trunk with bark markings -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11.5,22L11.5,8L12.5,8L12.5,22Z"/>
+    <!-- Bark markings characteristic of birch -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,20L13,20M11,18L13,18M11,16L13,16M11,14L13,14M11,12L13,12M11,10L13,10"/>
+    <!-- Birch crown with drooping branches -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,8C10,6 8,4 6,2C7,3 8,4 9,5C8,4 6,2 4,3C5,4 7,6 9,8C7,7 5,6 4,7C5,8 7,9 9,10C8,9 6,8 5,9C6,10 8,11 10,12L12,8Z"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,8C14,6 16,4 18,2C17,3 16,4 15,5C16,4 18,2 20,3C19,4 17,6 15,8C17,7 19,6 20,7C19,8 17,9 15,10C16,9 18,8 19,9C18,10 16,11 14,12L12,8Z"/>
+</vector>

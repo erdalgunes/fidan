@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Twisted trunk characteristic of olive trees -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,22L11,18C11,17 11.5,16 12,16C12.5,16 13,17 13,18L13,22Z"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11.5,16C11,15 11,14 11.5,13C12,12 12.5,12 13,13C13.5,14 13.5,15 13,16"/>
+    <!-- Olive tree crown - rounded and full -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,13C8,10 5,7 8,4C11,7 12,8 12,13C12,8 13,7 16,4C19,7 16,10 12,13Z"/>
+    <!-- Small olives -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M8,8C7.5,7.5 7.5,8.5 8,8M16,8C16.5,7.5 16.5,8.5 16,8M10,6C9.5,5.5 9.5,6.5 10,6M14,6C14.5,5.5 14.5,6.5 14,6"/>
+</vector>

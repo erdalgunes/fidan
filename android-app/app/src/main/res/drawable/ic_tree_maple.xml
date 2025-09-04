@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Trunk -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,22L11,14L13,14L13,22Z"/>
+    <!-- Maple tree crown -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,14C10,12 8,10 6,8C7,9 8,10 10,11C8,9 6,7 8,5C9,7 11,9 12,10C11,9 13,7 14,5C16,7 14,9 12,11C14,10 15,9 16,8C14,10 12,12 10,14C11,13 12,13 12,14Z"/>
+    <!-- Distinctive maple leaf shape -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,10L10,6L12,4L14,6L12,10M12,8L8,8L6,6L8,4L12,8M12,8L16,8L18,6L16,4L12,8"/>
+</vector>

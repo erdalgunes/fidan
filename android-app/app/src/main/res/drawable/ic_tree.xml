@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Improved generic tree trunk -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,22L11,14L13,14L13,22Z"/>
+    <!-- Tree crown with natural organic shape -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,14C9,12 6,9 4,6C6,8 8,10 10,11C8,9 6,7 5,5C7,7 9,9 11,10C10,8 8,6 7,4C9,6 11,8 12,9C11,8 13,6 15,4C16,6 14,8 13,10C15,9 17,7 19,5C18,7 16,9 14,11C16,10 18,8 20,6C18,9 15,12 12,14Z"/>
+    <!-- Small branches for detail -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,14L10,12M12,14L14,12M12,13L9,11M12,13L15,11"/>
+</vector>

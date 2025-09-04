@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Trunk -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11,22L11,12L13,12L13,22Z"/>
+    <!-- Conical cedar shape with horizontal layers -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,2L9,8L15,8Z"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,6L8,10L16,10Z"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,8L7,12L17,12Z"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,10L6,14L18,14Z"/>
+</vector>
