@@ -58,30 +58,40 @@ class CircuitMainActivity : ComponentActivity() {
         
         // Observe timer completion to add trees
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                timerService.state.collect { timerState ->
-                if (timerState.sessionCompleted) {
-                    val sessionData = SessionData(
-                        taskName = "Focus Session",
-                        durationMillis = 25 * 60 * 1000L,
-                        completedDate = java.util.Date(),
-                        wasCompleted = true
-                    )
-                    forestService.addTree(sessionData)
-                    timerService.resetTimer()
+            try {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    timerService.state.collect { timerState ->
+                        try {
+                            if (timerState.sessionCompleted) {
+                                val sessionData = SessionData(
+                                    taskName = "Focus Session",
+                                    durationMillis = 25 * 60 * 1000L,
+                                    completedDate = java.util.Date(),
+                                    wasCompleted = true
+                                )
+                                forestService.addTree(sessionData)
+                                timerService.resetTimer()
+                            }
+                            
+                            if (timerState.treeWithering && !timerState.isRunning) {
+                                val sessionData = SessionData(
+                                    taskName = "Focus Session (Stopped)",
+                                    durationMillis = timerService.getTimeElapsed(),
+                                    completedDate = java.util.Date(),
+                                    wasCompleted = false
+                                )
+                                forestService.addTree(sessionData)
+                            }
+                        } catch (e: Exception) {
+                            // Log error but continue - don't crash the main activity
+                            println("Error processing timer state: ${e.message}")
+                        }
+                    }
                 }
-                
-                if (timerState.treeWithering && !timerState.isRunning) {
-                    val sessionData = SessionData(
-                        taskName = "Focus Session (Stopped)",
-                        durationMillis = timerService.getTimeElapsed(),
-                        completedDate = java.util.Date(),
-                        wasCompleted = false
-                    )
-                    forestService.addTree(sessionData)
-                }
+            } catch (e: Exception) {
+                // Handle lifecycle/collection errors
+                println("Error in timer observation lifecycle: ${e.message}")
             }
-        }
         }
         
         setContent {

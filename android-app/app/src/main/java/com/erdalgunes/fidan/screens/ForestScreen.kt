@@ -13,6 +13,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import com.slack.circuit.retained.rememberRetained
 import com.slack.circuit.runtime.CircuitContext
 import com.slack.circuit.runtime.CircuitUiState
@@ -64,6 +71,7 @@ class ForestPresenter @Inject constructor(
 
 class ForestUi @Inject constructor() : Ui<ForestScreenState> {
     
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     override fun Content(state: ForestScreenState, modifier: Modifier) {
         Box(
@@ -98,7 +106,7 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                     )
                 }
             } else {
-                // Simple tree grid
+                // Enhanced tree grid with smooth animations
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(6),
                     contentPadding = PaddingValues(16.dp),
@@ -106,25 +114,47 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(state.forestState.trees) { tree ->
-                        Card(
-                            modifier = Modifier
-                                .size(80.dp), // Slightly larger to accommodate animated tree
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (tree.maintenanceState.needsWatering || 
-                                    tree.maintenanceState.hasWeeds || 
-                                    tree.maintenanceState.hasPests) {
-                                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                                } else {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                }
+                    items(
+                        items = state.forestState.trees,
+                        key = { tree -> tree.id }
+                    ) { tree ->
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn(
+                                animationSpec = tween(600, easing = EaseOutCubic)
+                            ) + scaleIn(
+                                initialScale = 0.8f,
+                                animationSpec = tween(600, easing = EaseOutBack)
+                            ),
+                            exit = fadeOut(
+                                animationSpec = tween(300)
+                            ) + scaleOut(
+                                targetScale = 0.8f,
+                                animationSpec = tween(300)
+                            ),
+                            modifier = Modifier.animateItemPlacement(
+                                animationSpec = tween(400, easing = EaseInOutCubic)
                             )
                         ) {
-                            VectorTree(
-                                tree = tree,
-                                isAnimated = true,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            Card(
+                                modifier = Modifier
+                                    .size(80.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (tree.maintenanceState.needsWatering || 
+                                        tree.maintenanceState.hasWeeds || 
+                                        tree.maintenanceState.hasPests) {
+                                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                    } else {
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    }
+                                )
+                            ) {
+                                VectorTree(
+                                    tree = tree,
+                                    isAnimated = true,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     }
                 }
@@ -147,28 +177,45 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                         val incompleteTrees = state.forestState.trees.count { !it.sessionData.wasCompleted }
                         val specialTrees = state.forestState.trees.count { it.treeType.isSpecial }
                         
+                        // Animated counters for smooth number changes
+                        val animatedCompletedTrees by animateIntAsState(
+                            targetValue = completedTrees,
+                            animationSpec = tween(500, easing = EaseOutCubic),
+                            label = "completedTrees"
+                        )
+                        val animatedCurrentStreak by animateIntAsState(
+                            targetValue = state.forestState.currentStreak,
+                            animationSpec = tween(400, easing = EaseOutBack),
+                            label = "currentStreak"
+                        )
+                        val animatedLongestStreak by animateIntAsState(
+                            targetValue = state.forestState.longestStreak,
+                            animationSpec = tween(400, easing = EaseOutCubic),
+                            label = "longestStreak"
+                        )
+                        
                         Text(
                             text = if (state.forestState.isDayTime) "☀️ Day" else "🌙 Night",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (state.forestState.currentStreak > 0) {
+                        if (animatedCurrentStreak > 0) {
                             Text(
-                                text = "🔥 ${state.forestState.currentStreak} streak",
+                                text = "🔥 $animatedCurrentStreak streak",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.tertiary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        if (state.forestState.longestStreak > 0) {
+                        if (animatedLongestStreak > 0) {
                             Text(
-                                text = "👑 ${state.forestState.longestStreak} best",
+                                text = "👑 $animatedLongestStreak best",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Text(
-                            text = "$completedTrees trees",
+                            text = "$animatedCompletedTrees trees",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )

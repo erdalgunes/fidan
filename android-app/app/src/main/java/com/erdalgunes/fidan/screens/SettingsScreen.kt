@@ -49,29 +49,46 @@ class SettingsPresenter(
             onBackClick = { navigator.pop() },
             onClearForest = {
                 scope.launch {
-                    forestService.clearAllTrees()
+                    try {
+                        forestService.clearAllTrees()
+                    } catch (e: Exception) {
+                        // Log error but don't crash - debug operation should be robust
+                        println("Error clearing forest: ${e.message}")
+                    }
                 }
             },
             onAddDemoTrees = {
                 scope.launch {
-                    forestService.clearAllTrees()
-                    // Add variety of trees
-                    forestService.addDebugTree(TreeType.OAK)
-                    forestService.addDebugTree(TreeType.CHERRY)
-                    forestService.addDebugTree(TreeType.PINE)
-                    forestService.addDebugTree(TreeType.PALM, needsWatering = true)
-                    forestService.addDebugTree(TreeType.SAPLING)
+                    try {
+                        forestService.clearAllTrees()
+                        // Add variety of trees
+                        forestService.addDebugTree(TreeType.OAK)
+                        forestService.addDebugTree(TreeType.CHERRY)
+                        forestService.addDebugTree(TreeType.PINE)
+                        forestService.addDebugTree(TreeType.PALM, needsWatering = true)
+                        forestService.addDebugTree(TreeType.SAPLING)
+                    } catch (e: Exception) {
+                        println("Error adding demo trees: ${e.message}")
+                    }
                 }
             },
             onAddRandomTree = {
                 scope.launch {
-                    val types = TreeType.values()
-                    forestService.addDebugTree(types.random())
+                    try {
+                        val types = TreeType.values()
+                        forestService.addDebugTree(types.random())
+                    } catch (e: Exception) {
+                        println("Error adding random tree: ${e.message}")
+                    }
                 }
             },
             onSimulateSession = { minutes ->
                 scope.launch {
-                    forestService.simulateCompletedSession(minutes)
+                    try {
+                        forestService.simulateCompletedSession(minutes)
+                    } catch (e: Exception) {
+                        println("Error simulating session: ${e.message}")
+                    }
                 }
             }
         )

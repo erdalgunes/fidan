@@ -39,3 +39,29 @@
 # Keep data classes used with Circuit
 -keep class com.erdalgunes.fidan.screens.** { *; }
 -keep class com.erdalgunes.fidan.data.** { *; }
+
+# Additional Compose optimization rules
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable <methods>;
+}
+
+# Keep service classes for proper functionality
+-keep class com.erdalgunes.fidan.service.** { *; }
+
+# Keep enum classes used throughout the app
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Coroutines optimization
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+
+# Prevent obfuscation of model classes for better debugging
+-keepnames class com.erdalgunes.fidan.data.** { *; }
+
+# Optimization settings
+-optimizations !code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 5
+-allowaccessmodification
