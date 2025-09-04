@@ -40,6 +40,13 @@ class ForestService @Inject constructor(
     private val _forestState = MutableStateFlow(loadPersistedState())
     val forestState: StateFlow<ForestState> = _forestState.asStateFlow()
     
+    init {
+        // Initialize with demo trees if forest is empty (for testing maintenance system)
+        if (_forestState.value.trees.isEmpty()) {
+            initializeDemoTrees()
+        }
+    }
+    
     fun addTree(sessionData: SessionData) {
         val currentState = _forestState.value
         
@@ -495,5 +502,98 @@ class ForestService @Inject constructor(
             Log.e(TAG, "Error loading active tasks, returning empty list", e)
             emptyList()
         }
+    }
+    
+    private fun initializeDemoTrees() {
+        Log.d(TAG, "Initializing demo trees for maintenance system testing")
+        
+        val now = Date()
+        val yesterday = Date(now.time - 24 * 60 * 60 * 1000L) // 24 hours ago
+        val twoDaysAgo = Date(now.time - 48 * 60 * 60 * 1000L) // 48 hours ago
+        
+        // Create demo trees with different maintenance needs
+        val demoTrees = listOf(
+            // Tree that needs watering (last watered 30 hours ago)
+            Tree(
+                x = 50f, y = 100f,
+                treeType = TreeType.OAK,
+                sessionData = SessionData(
+                    taskName = "Demo Focus Session",
+                    durationMillis = 25 * 60 * 1000L,
+                    completedDate = yesterday,
+                    wasCompleted = true,
+                    streakPosition = 1,
+                    wasPerfectFocus = true
+                ),
+                plantedDate = yesterday,
+                maintenanceState = MaintenanceState(
+                    needsWatering = false, // Will be calculated by updateMaintenanceNeeds
+                    hasWeeds = false,
+                    hasPests = false,
+                    lastWatered = Date(now.time - 30 * 60 * 60 * 1000L), // 30 hours ago
+                    lastWeeded = now,
+                    lastPestControl = now,
+                    healthLevel = 1.0f
+                )
+            ),
+            // Tree that needs weeding (last weeded 40 hours ago)
+            Tree(
+                x = 150f, y = 100f,
+                treeType = TreeType.CHERRY,
+                sessionData = SessionData(
+                    taskName = "Demo Focus Session",
+                    durationMillis = 25 * 60 * 1000L,
+                    completedDate = twoDaysAgo,
+                    wasCompleted = true,
+                    streakPosition = 2,
+                    wasPerfectFocus = true
+                ),
+                plantedDate = twoDaysAgo,
+                maintenanceState = MaintenanceState(
+                    needsWatering = false,
+                    hasWeeds = false, // Will be calculated by updateMaintenanceNeeds
+                    hasPests = false,
+                    lastWatered = now,
+                    lastWeeded = Date(now.time - 40 * 60 * 60 * 1000L), // 40 hours ago
+                    lastPestControl = now,
+                    healthLevel = 1.0f
+                )
+            ),
+            // Healthy tree (recently maintained)
+            Tree(
+                x = 250f, y = 100f,
+                treeType = TreeType.PINE,
+                sessionData = SessionData(
+                    taskName = "Demo Focus Session",
+                    durationMillis = 25 * 60 * 1000L,
+                    completedDate = now,
+                    wasCompleted = true,
+                    streakPosition = 3,
+                    wasPerfectFocus = true
+                ),
+                plantedDate = now,
+                maintenanceState = MaintenanceState(
+                    needsWatering = false,
+                    hasWeeds = false,
+                    hasPests = false,
+                    lastWatered = now,
+                    lastWeeded = now,
+                    lastPestControl = now,
+                    healthLevel = 1.0f
+                )
+            )
+        )
+        
+        val newState = _forestState.value.copy(
+            trees = demoTrees,
+            currentStreak = 3,
+            longestStreak = 3,
+            totalCompletedSessions = 3
+        )
+        _forestState.value = newState
+        saveState(newState)
+        
+        // Update maintenance needs to generate tasks
+        updateMaintenanceNeeds()
     }
 }
