@@ -21,7 +21,8 @@ data class TimerServiceState(
 
 @Singleton
 class TimerService @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val forestService: ForestService
 ) {
     
     companion object {
@@ -135,6 +136,34 @@ class TimerService @Inject constructor(
     
     private fun completeSession() {
         timerJob?.cancel()
+        
+        // Handle maintenance task completion
+        val currentTask = forestService.getCurrentMaintenanceTask()
+        if (currentTask != null) {
+            // Complete the maintenance task
+            forestService.completeMaintenanceTask(
+                taskId = currentTask.createdDate.toString(), // Simple task ID
+                treeId = currentTask.treeId,
+                task = currentTask.task
+            )
+            Log.d(TAG, "Completed maintenance task: ${currentTask.task.displayName}")
+        } else {
+            // No specific task, just add a new tree
+            val sessionData = com.erdalgunes.fidan.data.SessionData(
+                taskName = "Focus Session",
+                durationMillis = 25 * 60 * 1000L,
+                completedDate = java.util.Date(),
+                wasCompleted = true,
+                streakPosition = forestService.getCurrentStreak() + 1,
+                wasPerfectFocus = true
+            )
+            forestService.addTree(sessionData)
+            Log.d(TAG, "Added new tree for completed session")
+        }
+        
+        // Update maintenance needs for all trees
+        forestService.updateMaintenanceNeeds()
+        
         _state.value = _state.value.copy(
             isRunning = false,
             sessionCompleted = true,
@@ -155,10 +184,20 @@ class TimerService @Inject constructor(
         return when {
             _state.value.sessionCompleted -> "Session completed!"
             _state.value.treeWithering -> "Tree withering..."
-            _state.value.isRunning -> "Focus time active"
+            _state.value.isRunning -> {
+                val currentTask = forestService.getCurrentMaintenanceTask()
+                currentTask?.task?.focusMessage ?: "Focus time active"
+            }
             _state.value.isPaused -> "Timer paused"
-            else -> "Ready to focus"
+            else -> {
+                val currentTask = forestService.getCurrentMaintenanceTask()
+                currentTask?.task?.focusMessage ?: "Ready to focus"
+            }
         }
+    }
+    
+    fun getCurrentMaintenanceTask(): com.erdalgunes.fidan.data.ActiveMaintenanceTask? {
+        return forestService.getCurrentMaintenanceTask()
     }
     
     fun getTimeElapsed(): Long {
