@@ -20,9 +20,22 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Circuit - only keep what's necessary for reflection
+# Circuit - Keep screens and their parcelize implementations
 -keep class * implements com.slack.circuit.runtime.screen.Screen
+-keep class * implements com.slack.circuit.runtime.presenter.Presenter
+-keep class * implements com.slack.circuit.runtime.ui.Ui
+-keep class * implements com.slack.circuit.runtime.CircuitUiState
+
+# Keep @Parcelize classes
+-keep @kotlinx.parcelize.Parcelize class * { *; }
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final ** CREATOR;
+}
 
 # Hilt - Rules are added automatically by the Hilt plugin
 
 # Compose - Rules are handled by R8 and the Compose compiler plugin
+
+# Keep data classes used with Circuit
+-keep class com.erdalgunes.fidan.screens.** { *; }
+-keep class com.erdalgunes.fidan.data.** { *; }
