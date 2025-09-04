@@ -113,11 +113,11 @@ fun FidanTheme(
             // Use deprecated API for older Android versions, modern API for newer ones
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 @Suppress("DEPRECATION")
-                // Use darker primaryContainer for better contrast with light status icons
-                window.statusBarColor = colorScheme.primaryContainer.toArgb()
+                // Use very dark background color for maximum contrast with white status icons
+                window.statusBarColor = colorScheme.background.toArgb()
             }
-            // Always use light status bars in dark theme for proper icon visibility
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            // Use light status bar icons only in light theme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
