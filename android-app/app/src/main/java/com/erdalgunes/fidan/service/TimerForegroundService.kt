@@ -31,7 +31,11 @@ class TimerForegroundService : Service() {
             val intent = Intent(context, TimerForegroundService::class.java).apply {
                 action = ACTION_START_TIMER
             }
-            context.startForegroundService(intent)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
         
         fun stopService(context: Context) {
