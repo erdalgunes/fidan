@@ -1,21 +1,23 @@
 # Fidan Deployment System
 
-This document describes the build artifact system for deploying Fidan apps to both Android phones and Garmin devices.
+This document describes the build and deployment system for Fidan apps.
+
+## ⚠️ Current Status
+
+- **Android Deployment**: ✅ Fully functional
+- **Garmin Deployment**: 🚧 Experimental (build issues pending resolution)
 
 ## Quick Start
 
 ```bash
-# Deploy both apps with default settings (debug Android + fr965 Garmin)
-make deploy
-
-# Deploy release versions
-make deploy-release
-
-# Deploy only to Android
+# Deploy Android app (WORKING)
 make deploy-android
 
-# Deploy only to Garmin
+# Deploy to Garmin (EXPERIMENTAL - may fail due to build issues)
 make deploy-garmin
+
+# Full deployment (Android works, Garmin experimental)
+make deploy
 ```
 
 ## Prerequisites
@@ -26,10 +28,12 @@ make deploy-garmin
 - USB debugging enabled on device
 - Device authorized for debugging
 
-### Garmin 965
+### Garmin 965 (Experimental)
 - Garmin Connect IQ SDK installed
 - SDK binaries (`monkeyc`, `monkeydo`) in PATH
-- Garmin device connected or simulator running
+- Garmin device connected via USB in MTP mode
+- libmtp installed (`brew install libmtp`)
+- **Note**: Garmin build currently has unresolved manifest issues
 
 ## Build Artifacts
 

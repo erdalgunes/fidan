@@ -109,11 +109,26 @@ build_android() {
 build_garmin() {
     print_step "Building Garmin app for $GARMIN_DEVICE..."
     
+    print_warning "⚠️  EXPERIMENTAL: Garmin build has known manifest issues"
+    print_warning "This feature is under development and may not work properly"
+    echo
+    
+    # Check for Connect IQ SDK first
+    if ! command -v monkeyc &> /dev/null; then
+        print_error "Garmin Connect IQ SDK not found in PATH"
+        print_warning "Skipping Garmin build. Install SDK from:"
+        print_warning "https://developer.garmin.com/connect-iq/sdk/"
+        return 1
+    fi
+    
     # Use the main branch Garmin app
     if [ -d "/Users/erdalgunes/fidan-workspace/main/garmin-app" ]; then
         cd "/Users/erdalgunes/fidan-workspace/main/garmin-app"
-    else
+    elif [ -d "garmin-app" ]; then
         cd garmin-app
+    else
+        print_error "Garmin app directory not found"
+        return 1
     fi
     
     # Ensure developer key exists

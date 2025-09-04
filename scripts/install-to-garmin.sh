@@ -38,6 +38,9 @@ fi
 echo "🏃‍♂️ Garmin 965 App Installer"
 echo "=========================="
 echo
+print_warning "⚠️  EXPERIMENTAL: This installer is under development"
+print_warning "The Garmin app build has known issues that may prevent proper installation"
+echo
 
 # Check if file exists
 if [[ ! -f "$PRG_FILE" ]]; then
