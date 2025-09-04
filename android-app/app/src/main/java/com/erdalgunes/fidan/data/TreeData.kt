@@ -9,7 +9,8 @@ data class Tree(
     val y: Float,
     val treeType: TreeType,
     val sessionData: SessionData,
-    val plantedDate: Date = Date()
+    val plantedDate: Date = Date(),
+    val maintenanceState: MaintenanceState = MaintenanceState()
 )
 
 data class SessionData(
@@ -65,6 +66,35 @@ enum class TreeType(
     }
 }
 
+data class MaintenanceState(
+    val needsWatering: Boolean = false,
+    val hasWeeds: Boolean = false,
+    val hasPests: Boolean = false,
+    val lastWatered: Date = Date(),
+    val lastWeeded: Date = Date(),
+    val lastPestControl: Date = Date(),
+    val healthLevel: Float = 1.0f // 0.0 = dying, 1.0 = perfect health
+)
+
+enum class MaintenanceTask(
+    val displayName: String,
+    val description: String,
+    val emoji: String,
+    val focusMessage: String
+) {
+    WATERING("Watering", "Your tree needs water", "💧", "Focus for 25 minutes to water your tree"),
+    WEEDING("Weeding", "Weeds are growing around your tree", "🌿", "Focus for 25 minutes to clear the weeds"),
+    PEST_CONTROL("Pest Control", "Pests are bothering your tree", "🐛", "Focus for 25 minutes to protect your tree from pests"),
+    FERTILIZING("Fertilizing", "Give your tree extra nutrients", "🌱", "Focus for 25 minutes to fertilize your tree")
+}
+
+data class ActiveMaintenanceTask(
+    val treeId: String,
+    val task: MaintenanceTask,
+    val urgency: Float = 0.5f, // 0.0 = optional, 1.0 = urgent
+    val createdDate: Date = Date()
+)
+
 data class ForestState(
     val trees: List<Tree> = emptyList(),
     val offsetX: Float = 0f,
@@ -73,5 +103,6 @@ data class ForestState(
     val isDayTime: Boolean = true,
     val currentStreak: Int = 0,
     val longestStreak: Int = 0,
-    val totalCompletedSessions: Int = 0
+    val totalCompletedSessions: Int = 0,
+    val activeTasks: List<ActiveMaintenanceTask> = emptyList()
 )

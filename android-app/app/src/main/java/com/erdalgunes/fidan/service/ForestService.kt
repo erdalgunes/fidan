@@ -27,6 +27,12 @@ class ForestService @Inject constructor(
         private const val KEY_LONGEST_STREAK = "longest_streak"
         private const val KEY_TOTAL_COMPLETED = "total_completed"
         private const val KEY_IS_DAY_TIME = "is_day_time"
+        private const val KEY_ACTIVE_TASKS = "active_tasks"
+        
+        // Maintenance timing constants (in milliseconds)
+        private const val WATERING_INTERVAL = 24 * 60 * 60 * 1000L // 24 hours
+        private const val WEEDING_INTERVAL = 36 * 60 * 60 * 1000L  // 36 hours  
+        private const val PEST_INTERVAL = 48 * 60 * 60 * 1000L     // 48 hours
     }
     
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -138,6 +144,136 @@ class ForestService @Inject constructor(
         return _forestState.value.trees.count { it.treeType.isSpecial }
     }
     
+    fun updateMaintenanceNeeds() {
+        val currentState = _forestState.value
+        val updatedTrees = currentState.trees.map { tree ->
+            updateTreeMaintenance(tree)
+        }
+        
+        val newTasks = generateMaintenanceTasks(updatedTrees)
+        
+        val newState = currentState.copy(
+            trees = updatedTrees,
+            activeTasks = newTasks
+        )
+        _forestState.value = newState
+        saveState(newState)
+    }
+    
+    private fun updateTreeMaintenance(tree: Tree): Tree {
+        if (!tree.sessionData.wasCompleted) return tree // Only maintain healthy trees
+        
+        val now = Date()
+        val maintenance = tree.maintenanceState
+        
+        val needsWatering = (now.time - maintenance.lastWatered.time) > WATERING_INTERVAL
+        val hasWeeds = (now.time - maintenance.lastWeeded.time) > WEEDING_INTERVAL
+        val hasPests = (now.time - maintenance.lastPestControl.time) > PEST_INTERVAL
+        
+        // Calculate health based on maintenance needs
+        var healthLevel = 1.0f
+        if (needsWatering) healthLevel -= 0.3f
+        if (hasWeeds) healthLevel -= 0.2f
+        if (hasPests) healthLevel -= 0.2f
+        healthLevel = healthLevel.coerceAtLeast(0.1f) // Never completely dead
+        
+        return tree.copy(
+            maintenanceState = maintenance.copy(
+                needsWatering = needsWatering,
+                hasWeeds = hasWeeds,
+                hasPests = hasPests,
+                healthLevel = healthLevel
+            )
+        )
+    }
+    
+    private fun generateMaintenanceTasks(trees: List<Tree>): List<ActiveMaintenanceTask> {
+        val tasks = mutableListOf<ActiveMaintenanceTask>()
+        
+        trees.forEach { tree ->
+            val maintenance = tree.maintenanceState
+            
+            if (maintenance.needsWatering) {
+                tasks.add(ActiveMaintenanceTask(
+                    treeId = tree.id,
+                    task = MaintenanceTask.WATERING,
+                    urgency = if (maintenance.healthLevel < 0.5f) 1.0f else 0.7f
+                ))
+            }
+            
+            if (maintenance.hasWeeds) {
+                tasks.add(ActiveMaintenanceTask(
+                    treeId = tree.id,
+                    task = MaintenanceTask.WEEDING,
+                    urgency = 0.5f
+                ))
+            }
+            
+            if (maintenance.hasPests) {
+                tasks.add(ActiveMaintenanceTask(
+                    treeId = tree.id,
+                    task = MaintenanceTask.PEST_CONTROL,
+                    urgency = 0.8f
+                ))
+            }
+        }
+        
+        return tasks.sortedByDescending { it.urgency }
+    }
+    
+    fun completeMaintenanceTask(taskId: String, treeId: String, task: MaintenanceTask) {
+        val currentState = _forestState.value
+        val now = Date()
+        
+        val updatedTrees = currentState.trees.map { tree ->
+            if (tree.id == treeId) {
+                val maintenance = tree.maintenanceState
+                val updatedMaintenance = when (task) {
+                    MaintenanceTask.WATERING -> maintenance.copy(
+                        needsWatering = false,
+                        lastWatered = now,
+                        healthLevel = (maintenance.healthLevel + 0.3f).coerceAtMost(1.0f)
+                    )
+                    MaintenanceTask.WEEDING -> maintenance.copy(
+                        hasWeeds = false,
+                        lastWeeded = now,
+                        healthLevel = (maintenance.healthLevel + 0.2f).coerceAtMost(1.0f)
+                    )
+                    MaintenanceTask.PEST_CONTROL -> maintenance.copy(
+                        hasPests = false,
+                        lastPestControl = now,
+                        healthLevel = (maintenance.healthLevel + 0.2f).coerceAtMost(1.0f)
+                    )
+                    MaintenanceTask.FERTILIZING -> maintenance.copy(
+                        healthLevel = 1.0f // Fertilizing always brings to full health
+                    )
+                }
+                tree.copy(maintenanceState = updatedMaintenance)
+            } else {
+                tree
+            }
+        }
+        
+        val updatedTasks = currentState.activeTasks.filter { 
+            !(it.treeId == treeId && it.task == task) 
+        }
+        
+        val newState = currentState.copy(
+            trees = updatedTrees,
+            activeTasks = updatedTasks
+        )
+        _forestState.value = newState
+        saveState(newState)
+    }
+    
+    fun getCurrentMaintenanceTask(): ActiveMaintenanceTask? {
+        return _forestState.value.activeTasks.firstOrNull()
+    }
+    
+    fun getMaintenanceTasksCount(): Int {
+        return _forestState.value.activeTasks.size
+    }
+
     fun clearForest() {
         val newState = ForestState(
             trees = emptyList(),
