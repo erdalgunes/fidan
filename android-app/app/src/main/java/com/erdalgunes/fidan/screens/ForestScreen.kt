@@ -29,6 +29,7 @@ import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.data.*
 import com.erdalgunes.fidan.service.ForestService
+import com.erdalgunes.fidan.ui.components.PixelArtTree
 import com.erdalgunes.fidan.ui.components.VectorTree
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.collectAsState
@@ -232,6 +233,39 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                                 text = "$incompleteTrees saplings",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Pixel Art Tree Grid
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    contentPadding = PaddingValues(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(state.trees) { tree ->
+                        Box(
+                            modifier = Modifier.size(64.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            PixelArtTree(
+                                tree = tree,
+                                modifier = Modifier.fillMaxSize(),
+                                isGrowing = false
                             )
                         }
                     }
