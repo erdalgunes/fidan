@@ -22,7 +22,7 @@ import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.data.*
 import com.erdalgunes.fidan.service.ForestService
-import com.erdalgunes.fidan.ui.components.ProductionTree
+import com.erdalgunes.fidan.ui.components.VectorTree
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.collectAsState
 import kotlinx.parcelize.Parcelize
@@ -120,7 +120,7 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                                 }
                             )
                         ) {
-                            ProductionTree(
+                            VectorTree(
                                 tree = tree,
                                 isAnimated = true,
                                 modifier = Modifier.fillMaxSize()
