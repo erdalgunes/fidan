@@ -289,6 +289,7 @@ class ForestService @Inject constructor(
     private fun loadPersistedState(): ForestState {
         return try {
             val trees = loadTrees()
+            val activeTasks = loadActiveTasks()
             val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
             val longestStreak = prefs.getInt(KEY_LONGEST_STREAK, 0)
             val totalCompleted = prefs.getInt(KEY_TOTAL_COMPLETED, 0)
@@ -299,7 +300,8 @@ class ForestService @Inject constructor(
                 isDayTime = isDayTime,
                 currentStreak = currentStreak,
                 longestStreak = longestStreak,
-                totalCompletedSessions = totalCompleted
+                totalCompletedSessions = totalCompleted,
+                activeTasks = activeTasks
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error loading persisted state, using default", e)
@@ -308,7 +310,8 @@ class ForestService @Inject constructor(
                 isDayTime = true,
                 currentStreak = 0,
                 longestStreak = 0,
-                totalCompletedSessions = 0
+                totalCompletedSessions = 0,
+                activeTasks = emptyList()
             )
         }
     }
@@ -316,6 +319,7 @@ class ForestService @Inject constructor(
     private fun saveState(state: ForestState) {
         try {
             saveTrees(state.trees)
+            saveActiveTasks(state.activeTasks)
             prefs.edit()
                 .putInt(KEY_CURRENT_STREAK, state.currentStreak)
                 .putInt(KEY_LONGEST_STREAK, state.longestStreak)
@@ -376,6 +380,22 @@ class ForestService @Inject constructor(
     private fun parseTreeFromJson(json: JSONObject): Tree {
         val sessionJson = json.getJSONObject("sessionData")
         
+        // Parse maintenance state (with defaults for backward compatibility)
+        val maintenanceJson = json.optJSONObject("maintenanceState")
+        val maintenanceState = if (maintenanceJson != null) {
+            MaintenanceState(
+                needsWatering = maintenanceJson.getBoolean("needsWatering"),
+                hasWeeds = maintenanceJson.getBoolean("hasWeeds"),
+                hasPests = maintenanceJson.getBoolean("hasPests"),
+                lastWatered = Date(maintenanceJson.getLong("lastWatered")),
+                lastWeeded = Date(maintenanceJson.getLong("lastWeeded")),
+                lastPestControl = Date(maintenanceJson.getLong("lastPestControl")),
+                healthLevel = maintenanceJson.getDouble("healthLevel").toFloat()
+            )
+        } else {
+            MaintenanceState() // Default state for old data
+        }
+        
         return Tree(
             id = json.getString("id"),
             x = json.getDouble("x").toFloat(),
@@ -389,7 +409,8 @@ class ForestService @Inject constructor(
                 streakPosition = sessionJson.getInt("streakPosition"),
                 wasPerfectFocus = sessionJson.getBoolean("wasPerfectFocus")
             ),
-            plantedDate = Date(json.getLong("plantedDate"))
+            plantedDate = Date(json.getLong("plantedDate")),
+            maintenanceState = maintenanceState
         )
     }
     
@@ -408,6 +429,71 @@ class ForestService @Inject constructor(
                 put("streakPosition", tree.sessionData.streakPosition)
                 put("wasPerfectFocus", tree.sessionData.wasPerfectFocus)
             })
+            put("maintenanceState", JSONObject().apply {
+                put("needsWatering", tree.maintenanceState.needsWatering)
+                put("hasWeeds", tree.maintenanceState.hasWeeds)
+                put("hasPests", tree.maintenanceState.hasPests)
+                put("lastWatered", tree.maintenanceState.lastWatered.time)
+                put("lastWeeded", tree.maintenanceState.lastWeeded.time)
+                put("lastPestControl", tree.maintenanceState.lastPestControl.time)
+                put("healthLevel", tree.maintenanceState.healthLevel.toDouble())
+            })
+        }
+    }
+    
+    private fun saveActiveTasks(tasks: List<ActiveMaintenanceTask>) {
+        try {
+            val jsonArray = JSONArray()
+            
+            for (task in tasks) {
+                try {
+                    val taskJson = JSONObject().apply {
+                        put("treeId", task.treeId)
+                        put("task", task.task.name)
+                        put("urgency", task.urgency.toDouble())
+                        put("createdDate", task.createdDate.time)
+                    }
+                    jsonArray.put(taskJson)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Skipping task due to serialization error: ${task.treeId}", e)
+                }
+            }
+            
+            prefs.edit()
+                .putString(KEY_ACTIVE_TASKS, jsonArray.toString())
+                .apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving active tasks", e)
+        }
+    }
+    
+    private fun loadActiveTasks(): List<ActiveMaintenanceTask> {
+        return try {
+            val jsonString = prefs.getString(KEY_ACTIVE_TASKS, null) ?: return emptyList()
+            if (jsonString.isBlank()) return emptyList()
+            
+            val jsonArray = JSONArray(jsonString)
+            val tasks = mutableListOf<ActiveMaintenanceTask>()
+            
+            for (i in 0 until jsonArray.length()) {
+                try {
+                    val taskJson = jsonArray.getJSONObject(i)
+                    val task = ActiveMaintenanceTask(
+                        treeId = taskJson.getString("treeId"),
+                        task = MaintenanceTask.valueOf(taskJson.getString("task")),
+                        urgency = taskJson.getDouble("urgency").toFloat(),
+                        createdDate = Date(taskJson.getLong("createdDate"))
+                    )
+                    tasks.add(task)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Skipping corrupted task at index $i", e)
+                }
+            }
+            
+            tasks
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading active tasks, returning empty list", e)
+            emptyList()
         }
     }
 }
