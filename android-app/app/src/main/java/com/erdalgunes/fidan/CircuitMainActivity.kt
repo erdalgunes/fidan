@@ -12,6 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.Lifecycle
+import kotlinx.coroutines.launch
 import com.slack.circuit.backstack.rememberSaveableBackStack
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.foundation.CircuitCompositionLocals
@@ -52,8 +55,9 @@ class CircuitMainActivity : ComponentActivity() {
             .build()
         
         // Observe timer completion to add trees
-        lifecycleScope.launchWhenStarted {
-            timerService.state.collect { timerState ->
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                timerService.state.collect { timerState ->
                 if (timerState.sessionCompleted) {
                     val sessionData = SessionData(
                         taskName = "Focus Session",
@@ -75,6 +79,7 @@ class CircuitMainActivity : ComponentActivity() {
                     forestService.addTree(sessionData)
                 }
             }
+        }
         }
         
         setContent {
