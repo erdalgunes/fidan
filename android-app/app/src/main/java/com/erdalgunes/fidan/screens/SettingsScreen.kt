@@ -97,33 +97,31 @@ class SettingsPresenter(
 
 class SettingsUi @Inject constructor() : Ui<SettingsScreenState> {
     
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content(state: SettingsScreenState, modifier: Modifier) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Settings") },
-                    navigationIcon = {
-                        IconButton(onClick = state.onBackClick) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary
-                    )
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Back button row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = state.onBackClick) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
-        ) { padding ->
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            
+            Spacer(modifier = Modifier.height(16.dp))
                 // App Info Section
                 Card(
                     modifier = Modifier.fillMaxWidth()
