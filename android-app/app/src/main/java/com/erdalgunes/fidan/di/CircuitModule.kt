@@ -30,6 +30,10 @@ abstract class CircuitModule {
     @IntoSet
     abstract fun bindImpactPresenterFactory(factory: ImpactPresenterFactory): Presenter.Factory
     
+    @Binds
+    @IntoSet
+    abstract fun bindSettingsPresenterFactory(factory: SettingsPresenterFactory): Presenter.Factory
+    
     // UI Factories
     @Binds
     @IntoSet
@@ -46,4 +50,8 @@ abstract class CircuitModule {
     @Binds
     @IntoSet
     abstract fun bindImpactUiFactory(factory: ImpactUiFactory): Ui.Factory
+    
+    @Binds
+    @IntoSet
+    abstract fun bindSettingsUiFactory(factory: SettingsUiFactory): Ui.Factory
 }

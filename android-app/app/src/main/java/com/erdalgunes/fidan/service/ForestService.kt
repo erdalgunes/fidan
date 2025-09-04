@@ -625,7 +625,7 @@ class ForestService @Inject constructor(
         if (!BuildConfig.DEBUG) return
         
         val currentState = _forestState.value
-        val random = Random()
+        val random = Random.Default
         
         val newTree = Tree(
             x = random.nextFloat() * 300f,
@@ -671,33 +671,31 @@ class ForestService @Inject constructor(
     fun simulateCompletedSession(minutes: Int) {
         if (!BuildConfig.DEBUG) return
         
-        completeSession(
-            sessionData = SessionData(
-                taskName = "Debug Session",
-                durationMillis = minutes * 60 * 1000L,
-                completedDate = Date(),
-                wasCompleted = true,
-                streakPosition = _forestState.value.currentStreak + 1,
-                wasPerfectFocus = true
-            ),
-            maintenanceTaskId = null
+        val sessionData = SessionData(
+            taskName = "Debug Session",
+            durationMillis = minutes * 60 * 1000L,
+            completedDate = Date(),
+            wasCompleted = true,
+            streakPosition = _forestState.value.currentStreak + 1,
+            wasPerfectFocus = true
         )
+        
+        addTree(sessionData)
     }
     
     fun simulateFailedSession() {
         if (!BuildConfig.DEBUG) return
         
-        completeSession(
-            sessionData = SessionData(
-                taskName = "Failed Debug Session",
-                durationMillis = 5 * 60 * 1000L,
-                completedDate = Date(),
-                wasCompleted = false,
-                streakPosition = 0,
-                wasPerfectFocus = false
-            ),
-            maintenanceTaskId = null
+        val sessionData = SessionData(
+            taskName = "Failed Debug Session",
+            durationMillis = 5 * 60 * 1000L,
+            completedDate = Date(),
+            wasCompleted = false,
+            streakPosition = 0,
+            wasPerfectFocus = false
         )
+        
+        addTree(sessionData)
     }
     
     fun setStreak(streak: Int) {

@@ -120,7 +120,9 @@ fun FidanCircuitApp() {
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 actions = {
-                    IconButton(onClick = { /* Settings */ }) {
+                    IconButton(onClick = { 
+                        circuitNavigator.goTo(SettingsScreen)
+                    }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_settings),
                             contentDescription = "Settings",
