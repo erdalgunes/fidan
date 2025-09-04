@@ -4,7 +4,16 @@ enum class PomodoroState {
     IDLE,
     WORKING,
     SHORT_BREAK,
-    LONG_BREAK
+    LONG_BREAK;
+    
+    fun getCurrentDurationMillis(): Long {
+        return when (this) {
+            IDLE -> PomodoroSession.WORK_DURATION_MILLIS
+            WORKING -> PomodoroSession.WORK_DURATION_MILLIS
+            SHORT_BREAK -> PomodoroSession.SHORT_BREAK_DURATION_MILLIS
+            LONG_BREAK -> PomodoroSession.LONG_BREAK_DURATION_MILLIS
+        }
+    }
 }
 
 data class PomodoroSession(
@@ -20,14 +29,6 @@ data class PomodoroSession(
         const val SESSIONS_BEFORE_LONG_BREAK = 4
     }
     
-    fun getCurrentDurationMillis(): Long {
-        return when (currentState) {
-            PomodoroState.IDLE -> WORK_DURATION_MILLIS
-            PomodoroState.WORKING -> WORK_DURATION_MILLIS
-            PomodoroState.SHORT_BREAK -> SHORT_BREAK_DURATION_MILLIS
-            PomodoroState.LONG_BREAK -> LONG_BREAK_DURATION_MILLIS
-        }
-    }
     
     fun shouldTriggerLongBreak(): Boolean {
         return completedWorkSessions > 0 && completedWorkSessions % SESSIONS_BEFORE_LONG_BREAK == 0
