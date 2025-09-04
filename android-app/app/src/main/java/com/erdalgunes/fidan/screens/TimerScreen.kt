@@ -21,6 +21,8 @@ import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.service.TimerService
 import com.erdalgunes.fidan.service.TimerForegroundService
+import com.erdalgunes.fidan.service.PomodoroSessionService
+import com.erdalgunes.fidan.domain.PomodoroState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.parcelize.Parcelize
@@ -36,37 +38,78 @@ data class TimerState(
     val treeWithering: Boolean = false,
     val statusMessage: String = "Ready to focus",
     val currentTask: com.erdalgunes.fidan.data.ActiveMaintenanceTask? = null,
+    val pomodoroState: PomodoroState = PomodoroState.IDLE,
+    val completedWorkSessions: Int = 0,
+    val showBreakTimer: Boolean = false,
     val onStartStop: () -> Unit = {},
-    val onSessionStopped: () -> Unit = {}
+    val onSessionStopped: () -> Unit = {},
+    val onToggleMode: () -> Unit = {}
 ) : CircuitUiState
 
 class TimerPresenter @Inject constructor(
-    private val timerService: TimerService
+    private val timerService: TimerService,
+    private val pomodoroSessionService: PomodoroSessionService
 ) : Presenter<TimerState> {
     
     @Composable
     override fun present(): TimerState {
         val context = LocalContext.current
         val timerState by timerService.state.collectAsState()
+        val pomodoroSession by pomodoroSessionService.sessionState.collectAsState()
+        var showBreakTimer by rememberRetained { mutableStateOf(false) }
         
         return TimerState(
-            timeLeftMillis = timerState.timeLeftMillis,
-            isRunning = timerState.isRunning,
-            sessionCompleted = timerState.sessionCompleted,
+            timeLeftMillis = if (showBreakTimer) pomodoroSession.timeLeftMillis else timerState.timeLeftMillis,
+            isRunning = if (showBreakTimer) pomodoroSession.isRunning else timerState.isRunning,
+            sessionCompleted = if (showBreakTimer) pomodoroSession.currentState == PomodoroState.IDLE else timerState.sessionCompleted,
             treeWithering = timerState.treeWithering,
-            statusMessage = timerService.getStatusMessage(),
+            statusMessage = if (showBreakTimer) getPomodoroStatusMessage(pomodoroSession.currentState) else timerService.getStatusMessage(),
             currentTask = timerService.getCurrentMaintenanceTask(),
+            pomodoroState = pomodoroSession.currentState,
+            completedWorkSessions = pomodoroSession.completedWorkSessions,
+            showBreakTimer = showBreakTimer,
             onStartStop = {
-                if (timerState.isRunning) {
-                    TimerForegroundService.stopService(context)
+                if (showBreakTimer) {
+                    if (pomodoroSession.isRunning) {
+                        pomodoroSessionService.stopSession()
+                    } else {
+                        pomodoroSessionService.startSession()
+                    }
                 } else {
-                    TimerForegroundService.startService(context)
+                    if (timerState.isRunning) {
+                        TimerForegroundService.stopService(context)
+                    } else {
+                        TimerForegroundService.startService(context)
+                    }
                 }
             },
             onSessionStopped = {
-                TimerForegroundService.stopService(context)
+                if (showBreakTimer) {
+                    pomodoroSessionService.stopSession()
+                } else {
+                    TimerForegroundService.stopService(context)
+                }
+            },
+            onToggleMode = {
+                showBreakTimer = !showBreakTimer
+                if (showBreakTimer) {
+                    // Stop old service when switching to Pomodoro mode
+                    TimerForegroundService.stopService(context)
+                } else {
+                    // Stop Pomodoro when switching to simple mode
+                    pomodoroSessionService.stopSession()
+                }
             }
         )
+    }
+    
+    private fun getPomodoroStatusMessage(state: PomodoroState): String {
+        return when (state) {
+            PomodoroState.IDLE -> "Ready for Pomodoro"
+            PomodoroState.WORKING -> "Focus Time"
+            PomodoroState.SHORT_BREAK -> "Short Break"
+            PomodoroState.LONG_BREAK -> "Long Break"
+        }
     }
 }
 
@@ -92,6 +135,64 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly  // Better distribution
         ) {
+            // Pomodoro Mode Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Break Timer Mode",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Switch(
+                    checked = state.showBreakTimer,
+                    onCheckedChange = { state.onToggleMode() }
+                )
+            }
+            
+            // Pomodoro Progress Indicator
+            if (state.showBreakTimer && state.completedWorkSessions > 0) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Session Progress",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = "${state.completedWorkSessions} work sessions completed",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        )
+                        if (state.completedWorkSessions % 4 == 0 && state.completedWorkSessions > 0) {
+                            Text(
+                                text = "🎉 Long break earned!",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Current maintenance task display
             state.currentTask?.let { task ->
                 Card(
@@ -154,9 +255,21 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
                     modifier = Modifier.padding(vertical = 24.dp)
                 )
                 
-                // Simple status indicator
+                // Simple status indicator with Pomodoro state
                 Text(
                     text = when {
+                        state.showBreakTimer -> {
+                            when {
+                                state.sessionCompleted -> "Ready for Next Pomodoro"
+                                state.isRunning -> when (state.pomodoroState) {
+                                    PomodoroState.WORKING -> "Focus Time 🍅"
+                                    PomodoroState.SHORT_BREAK -> "Short Break ☕"
+                                    PomodoroState.LONG_BREAK -> "Long Break 🌟"
+                                    else -> "Focusing"
+                                }
+                                else -> state.statusMessage
+                            }
+                        }
                         state.sessionCompleted -> if (state.currentTask != null) "Task Complete! ✨" else "Session Complete"
                         state.treeWithering -> "Focus Lost"
                         state.isRunning -> if (state.currentTask != null) "Maintaining..." else "Focusing"
@@ -189,6 +302,18 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
             ) {
                 Text(
                     text = when {
+                        state.showBreakTimer -> {
+                            when {
+                                state.sessionCompleted -> "New Pomodoro"
+                                state.isRunning -> "Stop"
+                                else -> when (state.pomodoroState) {
+                                    PomodoroState.WORKING -> "Start Focus"
+                                    PomodoroState.SHORT_BREAK -> "Start Break"
+                                    PomodoroState.LONG_BREAK -> "Start Long Break"
+                                    else -> "Start Pomodoro"
+                                }
+                            }
+                        }
                         state.sessionCompleted -> "New Session"
                         state.isRunning -> "Stop"
                         state.currentTask != null -> "Start ${state.currentTask.task.displayName}"
