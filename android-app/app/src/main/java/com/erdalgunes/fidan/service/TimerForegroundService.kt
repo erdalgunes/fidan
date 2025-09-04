@@ -3,6 +3,7 @@ package com.erdalgunes.fidan.service
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -97,7 +98,11 @@ class TimerForegroundService : Service() {
             this,
             NOTIFICATION_ID,
             notification,
-            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            } else {
+                0
+            }
         )
         
         // Observe timer state and update notification
@@ -140,18 +145,20 @@ class TimerForegroundService : Service() {
     }
     
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
-            NotificationManager.IMPORTANCE_LOW // Low importance for timer notifications
-        ).apply {
-            description = "Focus timer notifications"
-            setShowBadge(false)
-            setSound(null, null) // Silent notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW // Low importance for timer notifications
+            ).apply {
+                description = "Focus timer notifications"
+                setShowBadge(false)
+                setSound(null, null) // Silent notifications
+            }
+            
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
-        
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(channel)
     }
     
     private fun createNotification(timeText: String, statusText: String): Notification {
