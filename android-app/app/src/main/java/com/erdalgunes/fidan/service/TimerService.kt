@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.erdalgunes.fidan.domain.SessionTimer
 
 data class TimerServiceState(
     val timeLeftMillis: Long = 25 * 60 * 1000L, // 25 minutes
@@ -23,7 +24,7 @@ data class TimerServiceState(
 class TimerService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val forestService: ForestService
-) {
+) : SessionTimer {
     
     companion object {
         private const val TAG = "TimerService"
@@ -58,7 +59,7 @@ class TimerService @Inject constructor(
         }
     }
     
-    fun startTimer() {
+    override fun start() {
         android.util.Log.d("TimerService", "startTimer called, current state: ${_state.value}")
         if (_state.value.sessionCompleted) {
             resetTimer()
@@ -69,6 +70,10 @@ class TimerService @Inject constructor(
         } else {
             startNewTimer()
         }
+    }
+
+    fun startTimer() {
+        start()
     }
     
     private fun startNewTimer() {
@@ -114,7 +119,7 @@ class TimerService @Inject constructor(
         }
     }
     
-    fun stopTimer() {
+    override fun stop() {
         timerJob?.cancel()
         val wasRunning = _state.value.isRunning
         _state.value = _state.value.copy(
@@ -127,11 +132,19 @@ class TimerService @Inject constructor(
             _state.value = _state.value.copy(treeWithering = true)
         }
     }
+
+    fun stopTimer() {
+        stop()
+    }
     
-    fun pauseTimer() {
+    override fun pause() {
         timerJob?.cancel()
         pausedTime = _state.value.timeLeftMillis
         _state.value = _state.value.copy(isRunning = false, isPaused = true)
+    }
+
+    fun pauseTimer() {
+        pause()
     }
     
     private fun completeSession() {
@@ -173,11 +186,15 @@ class TimerService @Inject constructor(
         )
     }
     
-    fun resetTimer() {
+    override fun reset() {
         timerJob?.cancel()
         _state.value = TimerServiceState()
         pausedTime = 0L
         sessionStartTime = 0L
+    }
+
+    fun resetTimer() {
+        reset()
     }
     
     fun getStatusMessage(): String {
@@ -200,6 +217,18 @@ class TimerService @Inject constructor(
         return forestService.getCurrentMaintenanceTask()
     }
     
+    override fun getTimeLeftMillis(): Long {
+        return _state.value.timeLeftMillis
+    }
+    
+    override fun isRunning(): Boolean {
+        return _state.value.isRunning
+    }
+    
+    override fun isCompleted(): Boolean {
+        return _state.value.sessionCompleted
+    }
+
     fun getTimeElapsed(): Long {
         return sessionDurationMs - _state.value.timeLeftMillis
     }
