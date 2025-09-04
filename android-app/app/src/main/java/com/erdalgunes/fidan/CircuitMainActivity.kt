@@ -122,12 +122,13 @@ fun FidanCircuitApp() {
                 title = {
                     Text(
                         text = "Fidan",
-                        color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 actions = {
                     IconButton(onClick = { 
@@ -135,8 +136,7 @@ fun FidanCircuitApp() {
                     }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_settings),
-                            contentDescription = "Settings",
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            contentDescription = "Settings"
                         )
                     }
                 }
