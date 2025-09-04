@@ -50,10 +50,12 @@ fun AnimatedTree(
     performanceLevel: PerformanceLevel = PerformanceLevel.HIGH,
     onGrowthComplete: () -> Unit = {}
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
-    val surfaceColor = MaterialTheme.colorScheme.surface
+    // Use proper tree colors instead of theme colors
+    val trunkColor = Color(0xFF8D6E63) // Brown trunk
+    val primaryColor = Color(0xFF4CAF50) // Green leaves  
+    val secondaryColor = Color(0xFF66BB6A) // Light green
+    val tertiaryColor = Color(0xFFE91E63) // Pink for cherry
+    val surfaceColor = Color(0xFF795548) // Brown for seed
     
     // Determine target stage based on tree type and session data
     val targetStage = when {
@@ -64,12 +66,14 @@ fun AnimatedTree(
         else -> TreeGrowthStage.SAPLING
     }
     
-    // Animation state
-    var currentStage by remember(tree.id) { mutableStateOf(TreeGrowthStage.SEED) }
+    // Animation state - start at target stage for completed trees
+    var currentStage by remember(tree.id) { 
+        mutableStateOf(if (isGrowing) TreeGrowthStage.SEED else targetStage) 
+    }
     
-    // Growth progress animation
+    // Growth progress animation - always show full progress for non-growing trees
     val growthProgress by animateFloatAsState(
-        targetValue = if (isGrowing || currentStage.ordinal < targetStage.ordinal) 1f else 0f,
+        targetValue = if (isGrowing || currentStage.ordinal < targetStage.ordinal) 1f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -125,6 +129,7 @@ fun AnimatedTree(
             windSway = windSway,
             specialEffect = specialEffectProgress,
             performanceLevel = performanceLevel,
+            trunkColor = trunkColor,
             primaryColor = primaryColor,
             secondaryColor = secondaryColor,
             tertiaryColor = tertiaryColor,
@@ -142,6 +147,7 @@ private fun DrawScope.drawAnimatedTree(
     windSway: Float,
     specialEffect: Float,
     performanceLevel: PerformanceLevel,
+    trunkColor: Color,
     primaryColor: Color,
     secondaryColor: Color,
     tertiaryColor: Color,
@@ -152,16 +158,17 @@ private fun DrawScope.drawAnimatedTree(
         when (stage) {
             TreeGrowthStage.SEED -> drawSeed(centerX, centerY, progress, surfaceColor)
             TreeGrowthStage.SPROUT -> drawSprout(centerX, centerY, progress, primaryColor)
-            TreeGrowthStage.SAPLING -> drawSapling(centerX, centerY, progress, primaryColor, secondaryColor)
-            TreeGrowthStage.YOUNG_TREE -> drawYoungTree(centerX, centerY, progress, treeType, performanceLevel, primaryColor, secondaryColor)
-            TreeGrowthStage.MATURE_TREE -> drawMatureTree(centerX, centerY, progress, treeType, performanceLevel, primaryColor, secondaryColor, tertiaryColor)
-            TreeGrowthStage.SPECIAL_TREE -> drawSpecialTree(centerX, centerY, progress, treeType, specialEffect, performanceLevel, primaryColor, secondaryColor, tertiaryColor)
+            TreeGrowthStage.SAPLING -> drawSapling(centerX, centerY, progress, trunkColor, secondaryColor)
+            TreeGrowthStage.YOUNG_TREE -> drawYoungTree(centerX, centerY, progress, treeType, performanceLevel, trunkColor, primaryColor)
+            TreeGrowthStage.MATURE_TREE -> drawMatureTree(centerX, centerY, progress, treeType, performanceLevel, trunkColor, primaryColor, tertiaryColor)
+            TreeGrowthStage.SPECIAL_TREE -> drawSpecialTree(centerX, centerY, progress, treeType, specialEffect, performanceLevel, trunkColor, primaryColor, tertiaryColor)
         }
     }
 }
 
 private fun DrawScope.drawSeed(centerX: Float, centerY: Float, progress: Float, color: Color) {
-    val radius = 4f * progress
+    val scale = size.width / 80f  // Scale based on expected 80dp width
+    val radius = 4f * scale * progress
     drawCircle(
         color = color,
         radius = radius,
@@ -170,14 +177,15 @@ private fun DrawScope.drawSeed(centerX: Float, centerY: Float, progress: Float, 
 }
 
 private fun DrawScope.drawSprout(centerX: Float, centerY: Float, progress: Float, color: Color) {
-    val height = 15f * progress
+    val scale = size.width / 80f
+    val height = 15f * scale * progress
     
     // Draw small stem
     drawLine(
         color = color,
         start = Offset(centerX, centerY),
         end = Offset(centerX, centerY - height),
-        strokeWidth = 2f
+        strokeWidth = 2f * scale
     )
     
     // Draw tiny leaves
@@ -185,20 +193,21 @@ private fun DrawScope.drawSprout(centerX: Float, centerY: Float, progress: Float
         val leafProgress = (progress - 0.5f) * 2f
         drawCircle(
             color = color.copy(alpha = 0.7f),
-            radius = 3f * leafProgress,
-            center = Offset(centerX - 4f, centerY - height * 0.8f)
+            radius = 3f * scale * leafProgress,
+            center = Offset(centerX - 4f * scale, centerY - height * 0.8f)
         )
         drawCircle(
             color = color.copy(alpha = 0.7f),
-            radius = 3f * leafProgress,
-            center = Offset(centerX + 4f, centerY - height * 0.8f)
+            radius = 3f * scale * leafProgress,
+            center = Offset(centerX + 4f * scale, centerY - height * 0.8f)
         )
     }
 }
 
 private fun DrawScope.drawSapling(centerX: Float, centerY: Float, progress: Float, trunkColor: Color, leafColor: Color) {
-    val height = 30f * progress
-    val trunkWidth = 3f
+    val scale = size.width / 80f
+    val height = 30f * scale * progress
+    val trunkWidth = 3f * scale
     
     // Draw trunk
     drawLine(
@@ -211,12 +220,12 @@ private fun DrawScope.drawSapling(centerX: Float, centerY: Float, progress: Floa
     // Draw simple crown
     if (progress > 0.6f) {
         val crownProgress = (progress - 0.6f) * 2.5f
-        val crownRadius = 12f * crownProgress
+        val crownRadius = 12f * scale * crownProgress
         
         drawCircle(
             color = leafColor.copy(alpha = 0.8f),
             radius = crownRadius,
-            center = Offset(centerX, centerY - height + 8f)
+            center = Offset(centerX, centerY - height + 8f * scale)
         )
     }
 }
@@ -230,8 +239,9 @@ private fun DrawScope.drawYoungTree(
     trunkColor: Color,
     leafColor: Color
 ) {
-    val height = 50f * progress
-    val trunkWidth = 4f
+    val scale = size.width / 80f
+    val height = 50f * scale * progress
+    val trunkWidth = 4f * scale
     
     // Draw main trunk
     drawLine(
@@ -263,8 +273,9 @@ private fun DrawScope.drawMatureTree(
     leafColor: Color,
     accentColor: Color
 ) {
-    val height = 70f * progress
-    val trunkWidth = 6f
+    val scale = size.width / 80f
+    val height = 70f * scale * progress
+    val trunkWidth = 6f * scale
     
     // Draw thick trunk with texture
     drawLine(
@@ -282,7 +293,7 @@ private fun DrawScope.drawMatureTree(
             color = trunkColor.copy(alpha = 0.3f),
             start = Offset(centerX - trunkWidth/2, y),
             end = Offset(centerX + trunkWidth/2, y),
-            strokeWidth = 1f
+            strokeWidth = 1f * scale
         )
     }
     
@@ -331,11 +342,12 @@ private fun DrawScope.drawSpecialTree(
     drawMatureTree(centerX, centerY, progress, treeType, performanceLevel, primaryColor, secondaryColor, tertiaryColor)
     
     if (progress > 0.9f) {
+        val scale = size.width / 80f
         // Add special effects based on tree type
         when (treeType) {
-            TreeType.GOLDEN_OAK -> drawGoldenEffect(centerX, centerY - 35f, specialEffect, Color.Yellow)
-            TreeType.CRYSTAL_TREE -> drawCrystalEffect(centerX, centerY - 35f, specialEffect, Color.Cyan)
-            TreeType.ANCIENT_TREE -> drawAncientEffect(centerX, centerY - 35f, specialEffect, Color.White)
+            TreeType.GOLDEN_OAK -> drawGoldenEffect(centerX, centerY - 35f * scale, specialEffect, Color.Yellow)
+            TreeType.CRYSTAL_TREE -> drawCrystalEffect(centerX, centerY - 35f * scale, specialEffect, Color.Cyan)
+            TreeType.ANCIENT_TREE -> drawAncientEffect(centerX, centerY - 35f * scale, specialEffect, Color.White)
             else -> {}
         }
     }
@@ -352,6 +364,7 @@ private fun DrawScope.drawBranches(
     leafColor: Color,
     treeType: TreeType
 ) {
+    val scale = size.width / 80f
     val angleStep = 360f / branchCount
     
     repeat(branchCount) { i ->
@@ -365,16 +378,16 @@ private fun DrawScope.drawBranches(
             color = trunkColor,
             start = Offset(x, y),
             end = Offset(endX, endY),
-            strokeWidth = 2f * progress,
+            strokeWidth = 2f * scale * progress,
             cap = StrokeCap.Round
         )
         
         // Draw leaves at branch end
         if (progress > 0.5f) {
             val leafSize = when (treeType) {
-                TreeType.PINE -> 6f * progress
-                TreeType.PALM -> 4f * progress  
-                else -> 8f * progress
+                TreeType.PINE -> 6f * scale * progress
+                TreeType.PALM -> 4f * scale * progress  
+                else -> 8f * scale * progress
             }
             
             drawCircle(
@@ -387,59 +400,63 @@ private fun DrawScope.drawBranches(
 }
 
 private fun DrawScope.drawFruit(x: Float, y: Float, progress: Float, color: Color) {
+    val scale = size.width / 80f
     repeat(3) { i ->
-        val offsetX = (i - 1) * 15f
-        val offsetY = Random.nextFloat() * 10f
+        val offsetX = (i - 1) * 15f * scale
+        val offsetY = Random.nextFloat() * 10f * scale
         drawCircle(
             color = color.copy(alpha = 0.8f * progress),
-            radius = 3f * progress,
+            radius = 3f * scale * progress,
             center = Offset(x + offsetX, y + offsetY)
         )
     }
 }
 
 private fun DrawScope.drawGoldenEffect(x: Float, y: Float, progress: Float, color: Color) {
+    val scale = size.width / 80f
     // Golden sparkles
     repeat(6) { i ->
         val angle = i * 60f + progress * 360f
-        val distance = 25f + sin(progress * PI).toFloat() * 5f
+        val distance = (25f + sin(progress * PI).toFloat() * 5f) * scale
         val sparkleX = x + cos(Math.toRadians(angle.toDouble())).toFloat() * distance
         val sparkleY = y + sin(Math.toRadians(angle.toDouble())).toFloat() * distance
         
         drawCircle(
             color = color.copy(alpha = 0.6f + sin(progress * PI).toFloat() * 0.4f),
-            radius = 2f + sin(progress * PI).toFloat() * 1f,
+            radius = (2f + sin(progress * PI).toFloat() * 1f) * scale,
             center = Offset(sparkleX, sparkleY)
         )
     }
 }
 
 private fun DrawScope.drawCrystalEffect(x: Float, y: Float, progress: Float, color: Color) {
+    val scale = size.width / 80f
     // Crystal shards rotating
     repeat(4) { i ->
         val angle = i * 90f + progress * 180f
-        val distance = 20f
+        val distance = 20f * scale
         val shardX = x + cos(Math.toRadians(angle.toDouble())).toFloat() * distance
         val shardY = y + sin(Math.toRadians(angle.toDouble())).toFloat() * distance
         
         drawLine(
             color = color.copy(alpha = 0.7f),
-            start = Offset(shardX - 3f, shardY - 3f),
-            end = Offset(shardX + 3f, shardY + 3f),
-            strokeWidth = 2f
+            start = Offset(shardX - 3f * scale, shardY - 3f * scale),
+            end = Offset(shardX + 3f * scale, shardY + 3f * scale),
+            strokeWidth = 2f * scale
         )
         drawLine(
             color = color.copy(alpha = 0.7f),
-            start = Offset(shardX - 3f, shardY + 3f),
-            end = Offset(shardX + 3f, shardY - 3f),
-            strokeWidth = 2f
+            start = Offset(shardX - 3f * scale, shardY + 3f * scale),
+            end = Offset(shardX + 3f * scale, shardY - 3f * scale),
+            strokeWidth = 2f * scale
         )
     }
 }
 
 private fun DrawScope.drawAncientEffect(x: Float, y: Float, progress: Float, color: Color) {
+    val scale = size.width / 80f
     // Ethereal glow
-    val glowRadius = 30f + sin(progress * PI).toFloat() * 10f
+    val glowRadius = (30f + sin(progress * PI).toFloat() * 10f) * scale
     val brush = RadialGradientShader(
         colors = listOf(color.copy(alpha = 0.1f), Color.Transparent),
         center = Offset(x, y),

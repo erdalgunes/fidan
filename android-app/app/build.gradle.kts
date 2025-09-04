@@ -6,11 +6,14 @@ plugins {
     kotlin("plugin.serialization") version "2.0.0"
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    id("com.android.compose.screenshot") version "0.0.1-alpha09"
 }
 
 android {
     namespace = "com.erdalgunes.fidan"
     compileSdk = 35
+    
+    experimentalProperties["android.experimental.enableScreenshotTest"] = true
 
     defaultConfig {
         minSdk = 24
@@ -86,6 +89,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("androidx.lifecycle:lifecycle-process:2.6.2")
     
+    // Socket.IO client for WebSocket communication
+    implementation("io.socket:socket.io-client:2.1.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    
     // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     
@@ -107,4 +114,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation(libs.androidx.compose.ui.tooling)
+    
+    // Screenshot testing
+    screenshotTestImplementation("androidx.compose.ui:ui-tooling")
 }

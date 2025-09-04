@@ -22,8 +22,7 @@ import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.data.*
 import com.erdalgunes.fidan.service.ForestService
-import com.erdalgunes.fidan.ui.components.AnimatedTree
-import com.erdalgunes.fidan.ui.components.PerformanceLevel
+import com.erdalgunes.fidan.ui.components.ProductionTree
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.collectAsState
 import kotlinx.parcelize.Parcelize
@@ -121,9 +120,9 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                                 }
                             )
                         ) {
-                            AnimatedTree(
+                            ProductionTree(
                                 tree = tree,
-                                performanceLevel = PerformanceLevel.MEDIUM, // Use medium performance for grid view
+                                isAnimated = true,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

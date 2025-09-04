@@ -3,7 +3,9 @@ package com.erdalgunes.fidan.service
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.erdalgunes.fidan.BuildConfig
 import com.erdalgunes.fidan.data.*
+import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -595,5 +597,129 @@ class ForestService @Inject constructor(
         
         // Update maintenance needs to generate tasks
         updateMaintenanceNeeds()
+    }
+    
+    // Debug methods - only available in debug builds
+    fun clearAllTrees() {
+        if (!BuildConfig.DEBUG) return
+        
+        val newState = ForestState(
+            trees = emptyList(),
+            isDayTime = true,
+            currentStreak = 0,
+            longestStreak = 0,
+            totalCompletedSessions = 0,
+            activeTasks = emptyList()
+        )
+        _forestState.value = newState
+        saveState(newState)
+    }
+    
+    fun addDebugTree(
+        treeType: TreeType,
+        needsWatering: Boolean = false,
+        hasWeeds: Boolean = false,
+        hasPests: Boolean = false,
+        healthLevel: Float = 1f
+    ) {
+        if (!BuildConfig.DEBUG) return
+        
+        val currentState = _forestState.value
+        val random = Random()
+        
+        val newTree = Tree(
+            x = random.nextFloat() * 300f,
+            y = random.nextFloat() * 200f,
+            treeType = treeType,
+            sessionData = SessionData(
+                taskName = "Debug Tree",
+                durationMillis = 25 * 60 * 1000L,
+                completedDate = Date(),
+                wasCompleted = true,
+                streakPosition = if (treeType.isSpecial) 5 else 1,
+                wasPerfectFocus = true
+            ),
+            plantedDate = Date(),
+            maintenanceState = MaintenanceState(
+                needsWatering = needsWatering,
+                hasWeeds = hasWeeds,
+                hasPests = hasPests,
+                lastWatered = if (needsWatering) Date(System.currentTimeMillis() - 25 * 60 * 60 * 1000L) else Date(),
+                lastWeeded = if (hasWeeds) Date(System.currentTimeMillis() - 37 * 60 * 60 * 1000L) else Date(),
+                lastPestControl = if (hasPests) Date(System.currentTimeMillis() - 49 * 60 * 60 * 1000L) else Date(),
+                healthLevel = healthLevel
+            )
+        )
+        
+        val newState = currentState.copy(
+            trees = currentState.trees + newTree
+        )
+        _forestState.value = newState
+        saveState(newState)
+        
+        // Generate maintenance tasks if needed
+        if (needsWatering || hasWeeds || hasPests) {
+            val newTasks = generateMaintenanceTasks(listOf(newTree))
+            val updatedState = newState.copy(
+                activeTasks = currentState.activeTasks + newTasks
+            )
+            _forestState.value = updatedState
+            saveState(updatedState)
+        }
+    }
+    
+    fun simulateCompletedSession(minutes: Int) {
+        if (!BuildConfig.DEBUG) return
+        
+        completeSession(
+            sessionData = SessionData(
+                taskName = "Debug Session",
+                durationMillis = minutes * 60 * 1000L,
+                completedDate = Date(),
+                wasCompleted = true,
+                streakPosition = _forestState.value.currentStreak + 1,
+                wasPerfectFocus = true
+            ),
+            maintenanceTaskId = null
+        )
+    }
+    
+    fun simulateFailedSession() {
+        if (!BuildConfig.DEBUG) return
+        
+        completeSession(
+            sessionData = SessionData(
+                taskName = "Failed Debug Session",
+                durationMillis = 5 * 60 * 1000L,
+                completedDate = Date(),
+                wasCompleted = false,
+                streakPosition = 0,
+                wasPerfectFocus = false
+            ),
+            maintenanceTaskId = null
+        )
+    }
+    
+    fun setStreak(streak: Int) {
+        if (!BuildConfig.DEBUG) return
+        
+        val currentState = _forestState.value
+        val newState = currentState.copy(
+            currentStreak = streak,
+            longestStreak = maxOf(currentState.longestStreak, streak)
+        )
+        _forestState.value = newState
+        saveState(newState)
+    }
+    
+    fun resetStreak() {
+        if (!BuildConfig.DEBUG) return
+        
+        val currentState = _forestState.value
+        val newState = currentState.copy(
+            currentStreak = 0
+        )
+        _forestState.value = newState
+        saveState(newState)
     }
 }
