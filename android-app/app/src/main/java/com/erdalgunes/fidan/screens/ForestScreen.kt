@@ -22,6 +22,8 @@ import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.data.*
 import com.erdalgunes.fidan.service.ForestService
+import com.erdalgunes.fidan.ui.components.AnimatedTree
+import com.erdalgunes.fidan.ui.components.PerformanceLevel
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.collectAsState
 import kotlinx.parcelize.Parcelize
@@ -108,20 +110,22 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                     items(state.forestState.trees) { tree ->
                         Card(
                             modifier = Modifier
-                                .size(60.dp),
+                                .size(80.dp), // Slightly larger to accommodate animated tree
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                                containerColor = if (tree.maintenanceState.needsWatering || 
+                                    tree.maintenanceState.hasWeeds || 
+                                    tree.maintenanceState.hasPests) {
+                                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                } else {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                }
                             )
                         ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = tree.treeType.emoji,
-                                    fontSize = 24.sp
-                                )
-                            }
+                            AnimatedTree(
+                                tree = tree,
+                                performanceLevel = PerformanceLevel.MEDIUM, // Use medium performance for grid view
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
                     }
                 }
