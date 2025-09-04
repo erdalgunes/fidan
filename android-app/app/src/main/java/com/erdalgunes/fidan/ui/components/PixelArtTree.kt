@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -62,8 +61,7 @@ fun PixelArtTree(
             painter = painterResource(id = growthStages[currentStageIndex]),
             contentDescription = "Pixel art tree - ${tree.treeType.name}",
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds,
-            filterQuality = FilterQuality.None // Keep pixel art crisp
+            contentScale = ContentScale.FillBounds
         )
     }
 }
