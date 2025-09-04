@@ -7,6 +7,7 @@ set -e
 # Configuration
 BUILD_TYPE=${1:-debug}
 BUILD_DIR="build-artifacts"
+PACKAGE_BASE="com.erdalgunes.fidan"
 
 # Colors
 RED='\033[0;31m'
@@ -64,11 +65,14 @@ build_android() {
     ./gradlew clean
     
     if [ "$BUILD_TYPE" = "release" ]; then
+        print_warning "Building unsigned release APK - will require signing for production"
         ./gradlew assembleRelease
         APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
+        PACKAGE_NAME="${PACKAGE_BASE}"
     else
         ./gradlew assembleDebug
         APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+        PACKAGE_NAME="${PACKAGE_BASE}.debug"
     fi
     
     if [ ! -f "$APK_PATH" ]; then
@@ -95,12 +99,25 @@ install_android() {
         exit 1
     fi
     
-    adb install -r "$APK_FILE"
+    # Check if app is already installed and ask for confirmation
+    if adb shell pm list packages | grep -q "$PACKAGE_NAME"; then
+        print_warning "App $PACKAGE_NAME is already installed"
+        read -p "Do you want to reinstall? This will keep app data. (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_step "Installation cancelled"
+            return
+        fi
+        adb install -r "$APK_FILE"
+    else
+        adb install "$APK_FILE"
+    fi
+    
     print_success "App installed successfully"
     
     # Try to launch the app
     print_step "Launching app..."
-    adb shell am start -n com.erdalgunes.fidan.debug/com.erdalgunes.fidan.MainActivity || true
+    adb shell am start -n "$PACKAGE_NAME/$PACKAGE_BASE.MainActivity" || true
 }
 
 # Main execution
