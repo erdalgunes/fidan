@@ -1,0 +1,42 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    
+    <!-- Generic sapling -->
+    <!-- Trunk -->
+    <path
+        android:fillColor="#6D4C41"
+        android:pathData="M15,17 h2v1 h-2z
+                         M15,18 h2v1 h-2z
+                         M15,19 h2v1 h-2z
+                         M15,20 h2v1 h-2z
+                         M15,21 h2v1 h-2z
+                         M15,22 h2v1 h-2z"/>
+    
+    <!-- Small crown -->
+    <path
+        android:fillColor="#689F38"
+        android:pathData="M14,10 h4v1 h-4z
+                         M13,11 h6v1 h-6z
+                         M12,12 h8v1 h-8z
+                         M12,13 h8v1 h-8z
+                         M13,14 h6v1 h-6z
+                         M13,15 h6v1 h-6z
+                         M14,16 h4v1 h-4z"/>
+    
+    <!-- Leaf highlights -->
+    <path
+        android:fillColor="#8BC34A"
+        android:pathData="M14,11 h2v1 h-2z
+                         M13,12 h2v1 h-2z
+                         M17,13 h2v1 h-2z
+                         M14,14 h1v1 h-1z"/>
+    
+    <!-- Ground -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M12,23 h8v1 h-8z
+                         M11,24 h10v1 h-10z"/>
+</vector>

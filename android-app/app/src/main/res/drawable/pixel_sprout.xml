@@ -1,0 +1,47 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    
+    <!-- Pixel art sprout - small green shoot -->
+    <!-- Stem -->
+    <path
+        android:fillColor="#689F38"
+        android:pathData="M15,18 h2v1 h-2z
+                         M15,19 h2v1 h-2z
+                         M15,20 h2v1 h-2z
+                         M15,21 h2v1 h-2z"/>
+    
+    <!-- First leaves -->
+    <path
+        android:fillColor="#8BC34A"
+        android:pathData="M13,16 h2v1 h-2z
+                         M12,17 h3v1 h-3z
+                         M13,18 h2v1 h-2z"/>
+    
+    <path
+        android:fillColor="#8BC34A"
+        android:pathData="M17,16 h2v1 h-2z
+                         M17,17 h3v1 h-3z
+                         M17,18 h2v1 h-2z"/>
+    
+    <!-- Leaf highlights -->
+    <path
+        android:fillColor="#AED581"
+        android:pathData="M13,17 h1v1 h-1z
+                         M18,17 h1v1 h-1z"/>
+    
+    <!-- Dirt base -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M13,22 h6v1 h-6z
+                         M12,23 h8v1 h-8z"/>
+    
+    <!-- Dirt particles -->
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M11,23 h1v1 h-1z
+                         M20,23 h1v1 h-1z
+                         M14,24 h4v1 h-4z"/>
+</vector>

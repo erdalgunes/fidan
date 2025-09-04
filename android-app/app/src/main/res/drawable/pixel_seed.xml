@@ -1,0 +1,34 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+    
+    <!-- Pixel art seed - 8x8 pixels in center -->
+    <!-- Dark brown seed body -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M13,14 h6v1 h-6z
+                         M12,15 h8v1 h-8z
+                         M11,16 h10v1 h-10z
+                         M11,17 h10v1 h-10z
+                         M12,18 h8v1 h-8z
+                         M13,19 h6v1 h-6z
+                         M14,20 h4v1 h-4z"/>
+    
+    <!-- Light brown highlight -->
+    <path
+        android:fillColor="#795548"
+        android:pathData="M14,15 h2v1 h-2z
+                         M13,16 h2v1 h-2z
+                         M14,17 h1v1 h-1z"/>
+    
+    <!-- Dirt particles -->
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M10,21 h1v1 h-1z
+                         M21,21 h1v1 h-1z
+                         M12,22 h1v1 h-1z
+                         M19,22 h1v1 h-1z
+                         M15,23 h2v1 h-2z"/>
+</vector>
