@@ -1,11 +1,15 @@
 package com.erdalgunes.fidan.service
 
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 data class TimerServiceState(
     val timeLeftMillis: Long = 25 * 60 * 1000L, // 25 minutes
@@ -16,9 +20,24 @@ data class TimerServiceState(
 )
 
 @Singleton
-class TimerService @Inject constructor() {
+class TimerService @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     
-    private val _state = MutableStateFlow(TimerServiceState())
+    companion object {
+        private const val TAG = "TimerService"
+        private const val PREFS_NAME = "timer_state"
+        private const val KEY_TIME_LEFT = "time_left_millis"
+        private const val KEY_IS_RUNNING = "is_running"
+        private const val KEY_SESSION_COMPLETED = "session_completed"
+        private const val KEY_TREE_WITHERING = "tree_withering"
+        private const val KEY_IS_PAUSED = "is_paused"
+        private const val KEY_SESSION_START_TIME = "session_start_time"
+    }
+    
+    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    
+    private val _state = MutableStateFlow(loadPersistedState())
     val state: StateFlow<TimerServiceState> = _state.asStateFlow()
     
     private var timerJob: Job? = null
@@ -28,7 +47,18 @@ class TimerService @Inject constructor() {
     
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     
+    init {
+        // Restore session start time from prefs
+        sessionStartTime = prefs.getLong(KEY_SESSION_START_TIME, 0L)
+        
+        // If we were running when app was killed, resume the timer
+        if (_state.value.isRunning && !_state.value.isPaused) {
+            resumeTimerAfterRestart()
+        }
+    }
+    
     fun startTimer() {
+        android.util.Log.d("TimerService", "startTimer called, current state: ${_state.value}")
         if (_state.value.sessionCompleted) {
             resetTimer()
         }
@@ -42,13 +72,15 @@ class TimerService @Inject constructor() {
     
     private fun startNewTimer() {
         sessionStartTime = System.currentTimeMillis()
-        _state.value = _state.value.copy(
+        val newState = _state.value.copy(
             isRunning = true,
             isPaused = false,
             sessionCompleted = false,
             treeWithering = false,
             timeLeftMillis = sessionDurationMs
         )
+        _state.value = newState
+        saveState(newState)
         startCountdown()
     }
     
@@ -61,13 +93,17 @@ class TimerService @Inject constructor() {
     private fun startCountdown() {
         timerJob?.cancel()
         timerJob = scope.launch {
+            android.util.Log.d("TimerService", "Countdown started")
             while (_state.value.isRunning && _state.value.timeLeftMillis > 0) {
                 delay(1000)
                 val currentTime = System.currentTimeMillis()
                 val elapsed = currentTime - sessionStartTime
                 val remaining = (sessionDurationMs - elapsed).coerceAtLeast(0)
                 
-                _state.value = _state.value.copy(timeLeftMillis = remaining)
+                android.util.Log.d("TimerService", "Updating time: $remaining ms left")
+                val newState = _state.value.copy(timeLeftMillis = remaining)
+                _state.value = newState
+                saveState(newState)
                 
                 if (remaining == 0L) {
                     completeSession()
@@ -117,10 +153,10 @@ class TimerService @Inject constructor() {
     
     fun getStatusMessage(): String {
         return when {
-            _state.value.sessionCompleted -> "Session completed! 🎉"
-            _state.value.treeWithering -> "Tree withering... 🥀"
-            _state.value.isRunning -> "Focus time active 🌱"
-            _state.value.isPaused -> "Timer paused ⏸️"
+            _state.value.sessionCompleted -> "Session completed!"
+            _state.value.treeWithering -> "Tree withering..."
+            _state.value.isRunning -> "Focus time active"
+            _state.value.isPaused -> "Timer paused"
             else -> "Ready to focus"
         }
     }
@@ -132,5 +168,54 @@ class TimerService @Inject constructor() {
     fun cleanup() {
         timerJob?.cancel()
         scope.cancel()
+    }
+    
+    private fun loadPersistedState(): TimerServiceState {
+        return try {
+            TimerServiceState(
+                timeLeftMillis = prefs.getLong(KEY_TIME_LEFT, 25 * 60 * 1000L),
+                isRunning = prefs.getBoolean(KEY_IS_RUNNING, false),
+                sessionCompleted = prefs.getBoolean(KEY_SESSION_COMPLETED, false),
+                treeWithering = prefs.getBoolean(KEY_TREE_WITHERING, false),
+                isPaused = prefs.getBoolean(KEY_IS_PAUSED, false)
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading timer state, using default", e)
+            TimerServiceState()
+        }
+    }
+    
+    private fun saveState(state: TimerServiceState) {
+        try {
+            prefs.edit()
+                .putLong(KEY_TIME_LEFT, state.timeLeftMillis)
+                .putBoolean(KEY_IS_RUNNING, state.isRunning)
+                .putBoolean(KEY_SESSION_COMPLETED, state.sessionCompleted)
+                .putBoolean(KEY_TREE_WITHERING, state.treeWithering)
+                .putBoolean(KEY_IS_PAUSED, state.isPaused)
+                .putLong(KEY_SESSION_START_TIME, sessionStartTime)
+                .apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving timer state", e)
+        }
+    }
+    
+    private fun resumeTimerAfterRestart() {
+        if (sessionStartTime > 0) {
+            val currentTime = System.currentTimeMillis()
+            val elapsed = currentTime - sessionStartTime
+            val remaining = (sessionDurationMs - elapsed).coerceAtLeast(0)
+            
+            if (remaining > 0) {
+                Log.d(TAG, "Resuming timer after restart with ${remaining}ms remaining")
+                val newState = _state.value.copy(timeLeftMillis = remaining)
+                _state.value = newState
+                saveState(newState)
+                startCountdown()
+            } else {
+                // Session should have completed while app was closed
+                completeSession()
+            }
+        }
     }
 }

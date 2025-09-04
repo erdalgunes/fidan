@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="theme_primary">#4CAF50</color>
-    <color name="status_bar_color">#388E3C</color>
-    <color name="ic_launcher_background">#E8F5E9</color>
+    <color name="status_bar_color">#1B5E20</color>
+    <color name="dark_background">#0D1F12</color>
+    <color name="ic_launcher_background">#0D1F12</color>
 </resources>

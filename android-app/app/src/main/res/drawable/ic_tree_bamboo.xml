@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Multiple bamboo stalks -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M9,22L9,4L10,4L10,22Z"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,22L12,2L13,2L13,22Z"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M15,22L15,5L16,5L16,22Z"/>
+    <!-- Bamboo nodes -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M8.5,18L10.5,18M8.5,14L10.5,14M8.5,10L10.5,10M8.5,6L10.5,6"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11.5,19L13.5,19M11.5,15L13.5,15M11.5,11L13.5,11M11.5,7L13.5,7M11.5,3L13.5,3"/>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M14.5,20L16.5,20M14.5,16L16.5,16M14.5,12L16.5,12M14.5,8L16.5,8"/>
+    <!-- Bamboo leaves -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M10,4L8,2M10,6L7,4M13,2L15,1M13,4L16,3M16,5L18,4M16,7L19,6"/>
+</vector>

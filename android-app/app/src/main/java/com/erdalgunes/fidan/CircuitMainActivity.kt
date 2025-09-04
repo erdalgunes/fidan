@@ -4,11 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.erdalgunes.fidan.R
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
@@ -83,7 +85,7 @@ class CircuitMainActivity : ComponentActivity() {
         }
         
         setContent {
-            FidanTheme {
+            FidanTheme(dynamicColor = false) {
                 CircuitCompositionLocals(circuit) {
                     FidanCircuitApp()
                 }
@@ -119,10 +121,10 @@ fun FidanCircuitApp() {
                 ),
                 actions = {
                     IconButton(onClick = { /* Settings */ }) {
-                        Text(
-                            text = "⚙️",
-                            fontSize = 20.sp,
-                            color = MaterialTheme.colorScheme.onPrimary
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_settings),
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }
@@ -136,7 +138,12 @@ fun FidanCircuitApp() {
                         selectedTab = 0
                         circuitNavigator.goTo(TimerScreen)
                     },
-                    icon = { Text("⏱️", fontSize = 20.sp) },
+                    icon = { 
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_timer),
+                            contentDescription = "Timer"
+                        )
+                    },
                     label = { Text("Timer") }
                 )
                 NavigationBarItem(
@@ -145,7 +152,12 @@ fun FidanCircuitApp() {
                         selectedTab = 1
                         circuitNavigator.goTo(ForestScreen)
                     },
-                    icon = { Text("🌳", fontSize = 20.sp) },
+                    icon = { 
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_forest),
+                            contentDescription = "Forest"
+                        )
+                    },
                     label = { Text("Forest") }
                 )
                 NavigationBarItem(
@@ -154,7 +166,12 @@ fun FidanCircuitApp() {
                         selectedTab = 2
                         circuitNavigator.goTo(StatsScreen)
                     },
-                    icon = { Text("📊", fontSize = 20.sp) },
+                    icon = { 
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_stats),
+                            contentDescription = "Stats"
+                        )
+                    },
                     label = { Text("Stats") }
                 )
                 NavigationBarItem(
@@ -163,7 +180,12 @@ fun FidanCircuitApp() {
                         selectedTab = 3
                         circuitNavigator.goTo(ImpactScreen)
                     },
-                    icon = { Text("🌍", fontSize = 20.sp) },
+                    icon = { 
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_impact),
+                            contentDescription = "Impact"
+                        )
+                    },
                     label = { Text("Impact") }
                 )
             }

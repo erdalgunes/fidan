@@ -202,17 +202,18 @@ class ImpactUi @Inject constructor() : Ui<ImpactState> {
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFE8F5E9)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "🌳",
-                        fontSize = 48.sp,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                    // Tree icon placeholder - could add vector graphic here
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .padding(bottom = 8.dp)
                     )
                     AnimatedTreeCount(
                         targetCount = impactData.realTreesPlanted,
@@ -243,7 +244,7 @@ class ImpactUi @Inject constructor() : Ui<ImpactState> {
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "💚 Support Fidan",
+                        text = "Support Fidan",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp),
@@ -255,7 +256,7 @@ class ImpactUi @Inject constructor() : Ui<ImpactState> {
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
-                        text = "⚡ 75% trees + 25% maintenance = Sustainable impact",
+                        text = "75% trees + 25% maintenance = Sustainable impact",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -263,9 +264,9 @@ class ImpactUi @Inject constructor() : Ui<ImpactState> {
                     )
                     
                     // Sponsorship Tiers
-                    SponsorshipTier("🌱 Seedling", "$3/month", "1 tree planted")
-                    SponsorshipTier("🌿 Sapling", "$10/month", "5 trees planted")  
-                    SponsorshipTier("🌳 Forest Guardian", "$25/month", "15 trees planted")
+                    SponsorshipTier("Seedling", "$3/month", "1 tree planted")
+                    SponsorshipTier("Sapling", "$10/month", "5 trees planted")  
+                    SponsorshipTier("Forest Guardian", "$25/month", "15 trees planted")
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
@@ -294,7 +295,7 @@ class ImpactUi @Inject constructor() : Ui<ImpactState> {
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "📊 Transparency",
+                        text = "Transparency",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp),
@@ -331,7 +332,7 @@ class ImpactUi @Inject constructor() : Ui<ImpactState> {
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "🤝 Our Partners",
+                        text = "Our Partners",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp),

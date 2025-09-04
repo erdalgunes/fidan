@@ -2,19 +2,13 @@ package com.erdalgunes.fidan.screens
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,7 +20,9 @@ import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.screen.Screen
 import com.slack.circuit.runtime.ui.Ui
 import com.erdalgunes.fidan.service.TimerService
+import com.erdalgunes.fidan.service.TimerForegroundService
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.parcelize.Parcelize
 import javax.inject.Inject
 
@@ -49,6 +45,7 @@ class TimerPresenter @Inject constructor(
     
     @Composable
     override fun present(): TimerState {
+        val context = LocalContext.current
         val timerState by timerService.state.collectAsState()
         
         return TimerState(
@@ -59,13 +56,13 @@ class TimerPresenter @Inject constructor(
             statusMessage = timerService.getStatusMessage(),
             onStartStop = {
                 if (timerState.isRunning) {
-                    timerService.stopTimer()
+                    TimerForegroundService.stopService(context)
                 } else {
-                    timerService.startTimer()
+                    TimerForegroundService.startService(context)
                 }
             },
             onSessionStopped = {
-                // Handle early session stop
+                TimerForegroundService.stopService(context)
             }
         )
     }
@@ -80,105 +77,78 @@ class TimerUi @Inject constructor() : Ui<TimerState> {
         val timeText = "%02d:%02d".format(minutes, seconds)
         
         val scale by animateFloatAsState(
-            targetValue = if (state.isRunning) 1.05f else 1f,
-            animationSpec = tween(durationMillis = 300),
+            targetValue = if (state.isRunning) 1.02f else 1f,  // Subtle animation
+            animationSpec = tween(durationMillis = 500),
             label = "timer_scale"
         )
         
+        // Minimalist design with optimal spacing for focus
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(horizontal = 40.dp, vertical = 60.dp),  // Increased whitespace
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceEvenly  // Better distribution
         ) {
-            // Timer Circle
-            Box(
-                modifier = Modifier
-                    .size(200.dp)
-                    .scale(scale)
-                    .clip(CircleShape)
-                    .background(
-                        when {
-                            state.treeWithering -> Color(0xFFFFF3E0)
-                            else -> Color.White
-                        }
-                    ),
-                contentAlignment = Alignment.Center
+            // Minimalist timer display - focus on the essentials
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.scale(scale)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Show tree emoji based on state
-                    Text(
-                        text = when {
-                            state.treeWithering -> "🥀"
-                            state.isRunning -> "🌱"
-                            else -> "🌱"
-                        },
-                        fontSize = 32.sp,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = timeText,
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = when {
-                            state.treeWithering -> Color(0xFFFF9800)
-                            else -> MaterialTheme.colorScheme.primary
-                        }
-                    )
-                    Text(
-                        text = when {
-                            state.treeWithering -> "Tree Withering"
-                            else -> "Focus Time"
-                        },
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                // Large, clear time display - the main focus element
+                Text(
+                    text = timeText,
+                    fontSize = 72.sp,  // Extra large for visibility
+                    fontWeight = FontWeight.Light,  // Clean, modern look
+                    letterSpacing = 4.sp,  // Better readability
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 24.dp)
+                )
+                
+                // Simple status indicator
+                Text(
+                    text = when {
+                        state.sessionCompleted -> "Session Complete"
+                        state.treeWithering -> "Focus Lost"
+                        state.isRunning -> "Focusing"
+                        else -> "Ready"
+                    },
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    letterSpacing = 1.sp
+                )
             }
             
-            Spacer(modifier = Modifier.height(40.dp))
-            
-            // Start/Stop Button
-            if (!state.sessionCompleted) {
-                FloatingActionButton(
-                    onClick = state.onStartStop,
-                    modifier = Modifier.size(72.dp),
-                    containerColor = if (state.isRunning) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
+            // Minimalist action button - single focus point
+            Button(
+                onClick = state.onStartStop,
+                modifier = Modifier
+                    .height(56.dp)
+                    .width(200.dp),
+                shape = RoundedCornerShape(28.dp),  // Smooth, modern shape
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = when {
+                        state.isRunning -> MaterialTheme.colorScheme.surfaceVariant
+                        else -> MaterialTheme.colorScheme.primary
                     }
-                ) {
-                    Icon(
-                        imageVector = if (state.isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
-                        contentDescription = if (state.isRunning) "Stop Timer" else "Start Timer",
-                        modifier = Modifier.size(32.dp),
-                        tint = Color.White
-                    )
-                }
-            } else {
-                FloatingActionButton(
-                    onClick = state.onStartStop,
-                    modifier = Modifier.size(72.dp),
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Start New Session",
-                        modifier = Modifier.size(32.dp),
-                        tint = Color.White
-                    )
-                }
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,  // Flat design
+                    pressedElevation = 2.dp
+                )
+            ) {
+                Text(
+                    text = when {
+                        state.sessionCompleted -> "New Session"
+                        state.isRunning -> "Stop"
+                        else -> "Start Focus"
+                    },
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 1.sp
+                )
             }
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            Text(
-                text = state.statusMessage,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
         }
     }
 }

@@ -69,7 +69,7 @@ class StatsUi @Inject constructor() : Ui<StatsState> {
                 .padding(24.dp)
         ) {
             Text(
-                text = "📊 Your Progress",
+                text = "Your Progress",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 32.dp),
@@ -84,7 +84,7 @@ class StatsUi @Inject constructor() : Ui<StatsState> {
                     modifier = Modifier.weight(1f),
                     title = "${state.completedTrees}",
                     subtitle = "Completed Trees",
-                    icon = "🌳",
+                    icon = "Trees",
                     color = MaterialTheme.colorScheme.primary
                 )
                 
@@ -92,7 +92,7 @@ class StatsUi @Inject constructor() : Ui<StatsState> {
                     modifier = Modifier.weight(1f),
                     title = "${state.incompleteTrees}",
                     subtitle = "Incomplete Sessions",
-                    icon = "🌱",
+                    icon = "Saplings",
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
@@ -107,7 +107,7 @@ class StatsUi @Inject constructor() : Ui<StatsState> {
                     modifier = Modifier.weight(1f),
                     title = state.totalFocusTime,
                     subtitle = "Total Time",
-                    icon = "⏱️",
+                    icon = "Time",
                     color = MaterialTheme.colorScheme.tertiary
                 )
                 
@@ -115,7 +115,7 @@ class StatsUi @Inject constructor() : Ui<StatsState> {
                     modifier = Modifier.weight(1f),
                     title = state.completionRate,
                     subtitle = "Completion Rate",
-                    icon = "🎯",
+                    icon = "Rate",
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -145,7 +145,9 @@ class StatsUi @Inject constructor() : Ui<StatsState> {
             ) {
                 Text(
                     text = icon,
-                    fontSize = 32.sp,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(

@@ -107,7 +107,7 @@ fun TreeDetailDialog(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = if (tree.sessionData.wasCompleted) "✅ Session Completed" else "⏸️ Session Stopped Early",
+                        text = if (tree.sessionData.wasCompleted) "Session Completed" else "Session Stopped Early",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (tree.sessionData.wasCompleted) Color(0xFF4CAF50) else Color(0xFFFF9800),
                         fontWeight = FontWeight.Medium
@@ -156,9 +156,9 @@ fun TreeDetailDialog(
                 ) {
                     Text(
                         text = if (tree.sessionData.wasCompleted) {
-                            "🌟 Great work! You completed a full focus session and helped your forest grow!"
+                            "Great work! You completed a full focus session and helped your forest grow!"
                         } else {
-                            "🌱 Every effort counts! Keep practicing and your forest will flourish."
+                            "Every effort counts! Keep practicing and your forest will flourish."
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,

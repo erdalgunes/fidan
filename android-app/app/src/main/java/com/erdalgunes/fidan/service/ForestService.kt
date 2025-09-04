@@ -1,25 +1,37 @@
 package com.erdalgunes.fidan.service
 
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import com.erdalgunes.fidan.data.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Singleton
-class ForestService @Inject constructor() {
+class ForestService @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     
-    private val _forestState = MutableStateFlow(
-        ForestState(
-            trees = emptyList(),
-            isDayTime = true,
-            currentStreak = 0,
-            longestStreak = 0,
-            totalCompletedSessions = 0
-        )
-    )
+    companion object {
+        private const val TAG = "ForestService"
+        private const val PREFS_NAME = "forest_state"
+        private const val KEY_TREES = "trees"
+        private const val KEY_CURRENT_STREAK = "current_streak"
+        private const val KEY_LONGEST_STREAK = "longest_streak"
+        private const val KEY_TOTAL_COMPLETED = "total_completed"
+        private const val KEY_IS_DAY_TIME = "is_day_time"
+    }
+    
+    private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    
+    private val _forestState = MutableStateFlow(loadPersistedState())
     val forestState: StateFlow<ForestState> = _forestState.asStateFlow()
     
     fun addTree(sessionData: SessionData) {
@@ -67,18 +79,23 @@ class ForestService @Inject constructor() {
         
         val updatedTrees = currentState.trees + newTree
         
-        _forestState.value = currentState.copy(
+        val newState = currentState.copy(
             trees = updatedTrees,
             currentStreak = newStreak,
             longestStreak = newLongestStreak,
             totalCompletedSessions = newTotalCompleted
         )
+        
+        _forestState.value = newState
+        saveState(newState)
     }
     
     fun updateDayNightCycle() {
-        _forestState.value = _forestState.value.copy(
+        val newState = _forestState.value.copy(
             isDayTime = !_forestState.value.isDayTime
         )
+        _forestState.value = newState
+        saveState(newState)
     }
     
     fun getCompletedTreesCount(): Int {
@@ -122,12 +139,139 @@ class ForestService @Inject constructor() {
     }
     
     fun clearForest() {
-        _forestState.value = ForestState(
+        val newState = ForestState(
             trees = emptyList(),
             isDayTime = true,
             currentStreak = 0,
             longestStreak = 0,
             totalCompletedSessions = 0
         )
+        _forestState.value = newState
+        saveState(newState)
+    }
+    
+    private fun loadPersistedState(): ForestState {
+        return try {
+            val trees = loadTrees()
+            val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
+            val longestStreak = prefs.getInt(KEY_LONGEST_STREAK, 0)
+            val totalCompleted = prefs.getInt(KEY_TOTAL_COMPLETED, 0)
+            val isDayTime = prefs.getBoolean(KEY_IS_DAY_TIME, true)
+            
+            ForestState(
+                trees = trees,
+                isDayTime = isDayTime,
+                currentStreak = currentStreak,
+                longestStreak = longestStreak,
+                totalCompletedSessions = totalCompleted
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading persisted state, using default", e)
+            ForestState(
+                trees = emptyList(),
+                isDayTime = true,
+                currentStreak = 0,
+                longestStreak = 0,
+                totalCompletedSessions = 0
+            )
+        }
+    }
+    
+    private fun saveState(state: ForestState) {
+        try {
+            saveTrees(state.trees)
+            prefs.edit()
+                .putInt(KEY_CURRENT_STREAK, state.currentStreak)
+                .putInt(KEY_LONGEST_STREAK, state.longestStreak)
+                .putInt(KEY_TOTAL_COMPLETED, state.totalCompletedSessions)
+                .putBoolean(KEY_IS_DAY_TIME, state.isDayTime)
+                .apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving forest state", e)
+        }
+    }
+    
+    private fun loadTrees(): List<Tree> {
+        return try {
+            val jsonString = prefs.getString(KEY_TREES, null) ?: return emptyList()
+            if (jsonString.isBlank()) return emptyList()
+            
+            val jsonArray = JSONArray(jsonString)
+            val trees = mutableListOf<Tree>()
+            
+            for (i in 0 until jsonArray.length()) {
+                try {
+                    val treeJson = jsonArray.getJSONObject(i)
+                    val tree = parseTreeFromJson(treeJson)
+                    trees.add(tree)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Skipping corrupted tree at index $i", e)
+                }
+            }
+            
+            trees
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading trees, returning empty list", e)
+            emptyList()
+        }
+    }
+    
+    private fun saveTrees(trees: List<Tree>) {
+        try {
+            val jsonArray = JSONArray()
+            
+            for (tree in trees) {
+                try {
+                    val treeJson = convertTreeToJson(tree)
+                    jsonArray.put(treeJson)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Skipping tree due to serialization error: ${tree.id}", e)
+                }
+            }
+            
+            prefs.edit()
+                .putString(KEY_TREES, jsonArray.toString())
+                .apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving trees", e)
+        }
+    }
+    
+    private fun parseTreeFromJson(json: JSONObject): Tree {
+        val sessionJson = json.getJSONObject("sessionData")
+        
+        return Tree(
+            id = json.getString("id"),
+            x = json.getDouble("x").toFloat(),
+            y = json.getDouble("y").toFloat(),
+            treeType = TreeType.valueOf(json.getString("treeType")),
+            sessionData = SessionData(
+                taskName = sessionJson.optString("taskName").takeIf { it.isNotEmpty() },
+                durationMillis = sessionJson.getLong("durationMillis"),
+                completedDate = Date(sessionJson.getLong("completedDate")),
+                wasCompleted = sessionJson.getBoolean("wasCompleted"),
+                streakPosition = sessionJson.getInt("streakPosition"),
+                wasPerfectFocus = sessionJson.getBoolean("wasPerfectFocus")
+            ),
+            plantedDate = Date(json.getLong("plantedDate"))
+        )
+    }
+    
+    private fun convertTreeToJson(tree: Tree): JSONObject {
+        return JSONObject().apply {
+            put("id", tree.id)
+            put("x", tree.x.toDouble())
+            put("y", tree.y.toDouble())
+            put("treeType", tree.treeType.name)
+            put("plantedDate", tree.plantedDate.time)
+            put("sessionData", JSONObject().apply {
+                put("taskName", tree.sessionData.taskName ?: "")
+                put("durationMillis", tree.sessionData.durationMillis)
+                put("completedDate", tree.sessionData.completedDate.time)
+                put("wasCompleted", tree.sessionData.wasCompleted)
+                put("streakPosition", tree.sessionData.streakPosition)
+                put("wasPerfectFocus", tree.sessionData.wasPerfectFocus)
+            })
+        }
     }
 }
