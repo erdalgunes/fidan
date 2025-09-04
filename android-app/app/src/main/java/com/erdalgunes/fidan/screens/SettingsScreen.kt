@@ -265,7 +265,6 @@ class SettingsUi @Inject constructor() : Ui<SettingsScreenState> {
             }
         }
     }
-}
 
 class SettingsPresenterFactory @Inject constructor(
     private val forestService: ForestService
