@@ -14,7 +14,10 @@ class ForestService @Inject constructor() {
     private val _forestState = MutableStateFlow(
         ForestState(
             trees = emptyList(),
-            isDayTime = true
+            isDayTime = true,
+            currentStreak = 0,
+            longestStreak = 0,
+            totalCompletedSessions = 0
         )
     )
     val forestState: StateFlow<ForestState> = _forestState.asStateFlow()
@@ -22,29 +25,53 @@ class ForestService @Inject constructor() {
     fun addTree(sessionData: SessionData) {
         val currentState = _forestState.value
         
+        // Update streak tracking
+        val newStreak = if (sessionData.wasCompleted) {
+            currentState.currentStreak + 1
+        } else {
+            0 // Reset streak on failed session
+        }
+        
+        val newLongestStreak = maxOf(currentState.longestStreak, newStreak)
+        val newTotalCompleted = if (sessionData.wasCompleted) {
+            currentState.totalCompletedSessions + 1
+        } else {
+            currentState.totalCompletedSessions
+        }
+        
         // Calculate position based on current number of trees (grid layout)
         val treeIndex = currentState.trees.size
         val x = (treeIndex % 6).toFloat() * 100f // 6 columns
         val y = (treeIndex / 6).toFloat() * 100f
         
-        val treeType = if (sessionData.wasCompleted) {
-            TreeType.getRandomCompletedTreeType()
-        } else {
-            TreeType.SAPLING
-        }
+        // Enhanced session data with streak information
+        val enhancedSessionData = sessionData.copy(
+            streakPosition = newStreak,
+            wasPerfectFocus = sessionData.wasCompleted && !sessionData.taskName.isNullOrEmpty()
+        )
+        
+        // Use enhanced tree selection based on streak
+        val treeType = TreeType.getTreeTypeForSession(
+            wasCompleted = sessionData.wasCompleted,
+            streakPosition = newStreak,
+            wasPerfectFocus = enhancedSessionData.wasPerfectFocus
+        )
         
         val newTree = Tree(
             id = UUID.randomUUID().toString(),
             x = x,
             y = y,
             treeType = treeType,
-            sessionData = sessionData
+            sessionData = enhancedSessionData
         )
         
         val updatedTrees = currentState.trees + newTree
         
         _forestState.value = currentState.copy(
-            trees = updatedTrees
+            trees = updatedTrees,
+            currentStreak = newStreak,
+            longestStreak = newLongestStreak,
+            totalCompletedSessions = newTotalCompleted
         )
     }
     
@@ -82,10 +109,25 @@ class ForestService @Inject constructor() {
         }
     }
     
+    fun getCurrentStreak(): Int {
+        return _forestState.value.currentStreak
+    }
+    
+    fun getLongestStreak(): Int {
+        return _forestState.value.longestStreak
+    }
+    
+    fun getSpecialTreesCount(): Int {
+        return _forestState.value.trees.count { it.treeType.isSpecial }
+    }
+    
     fun clearForest() {
         _forestState.value = ForestState(
             trees = emptyList(),
-            isDayTime = true
+            isDayTime = true,
+            currentStreak = 0,
+            longestStreak = 0,
+            totalCompletedSessions = 0
         )
     }
 }

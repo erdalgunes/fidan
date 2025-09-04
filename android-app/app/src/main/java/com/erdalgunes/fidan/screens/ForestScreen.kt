@@ -142,20 +142,44 @@ class ForestUi @Inject constructor() : Ui<ForestScreenState> {
                     ) {
                         val completedTrees = state.forestState.trees.count { it.sessionData.wasCompleted }
                         val incompleteTrees = state.forestState.trees.count { !it.sessionData.wasCompleted }
+                        val specialTrees = state.forestState.trees.count { it.treeType.isSpecial }
                         
                         Text(
                             text = if (state.forestState.isDayTime) "☀️ Day" else "🌙 Night",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        if (state.forestState.currentStreak > 0) {
+                            Text(
+                                text = "🔥 ${state.forestState.currentStreak} streak",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        if (state.forestState.longestStreak > 0) {
+                            Text(
+                                text = "👑 ${state.forestState.longestStreak} best",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         Text(
-                            text = "🌳 $completedTrees trees",
+                            text = "$completedTrees trees",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
+                        if (specialTrees > 0) {
+                            Text(
+                                text = "✨ $specialTrees special",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         if (incompleteTrees > 0) {
                             Text(
-                                text = "🌱 $incompleteTrees saplings",
+                                text = "$incompleteTrees saplings",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.secondary
                             )
