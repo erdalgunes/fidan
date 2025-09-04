@@ -22,11 +22,7 @@ help:
 	@echo "  make android-install - Install debug APK on device"
 	@echo ""
 	@echo "Deployment:"
-	@echo "  make deploy         - Build & deploy both apps (debug + fr965)"
-	@echo "  make deploy-debug   - Build & deploy debug versions"
-	@echo "  make deploy-release - Build & deploy release versions"
-	@echo "  make deploy-android - Deploy Android app only"
-	@echo "  make deploy-garmin  - Deploy Garmin app only"
+	@echo "  make deploy-android - Build & install Android app"
 	@echo ""
 
 # Main preflight check
@@ -84,26 +80,12 @@ android-install:
 	@echo "Installing debug APK on device..."
 	@cd android-app && ./gradlew installDebug
 
-# Deployment targets
-deploy:
-	@echo "Building and deploying apps to both Android and Garmin devices..."
-	@bash scripts/deploy.sh
-
-deploy-debug:
-	@echo "Building and deploying debug versions..."
-	@bash scripts/deploy.sh debug fr965
-
-deploy-release:
-	@echo "Building and deploying release versions..."
-	@bash scripts/deploy.sh release fr965
-
-deploy-garmin:
-	@echo "Building and deploying Garmin app only..."
-	@bash scripts/deploy.sh debug fr965
-
+# Deployment
 deploy-android:
-	@echo "Building and deploying Android app only..."
-	@cd android-app && ./gradlew assembleDebug installDebug
+	@bash scripts/deploy-android.sh
+
+deploy-android-release:
+	@bash scripts/deploy-android.sh release
 
 # Format code
 format:
