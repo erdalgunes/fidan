@@ -70,45 +70,57 @@ jobs:
           # Test uvx access to private repositories
           echo "🧪 Testing uvx access to private AI tools..."
           
-          # Test tavily access
+          # Test tavily access with multiple approaches
           echo "Testing tavily..."
-          if uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily --version; then
-            echo "✅ Tavily accessible via uvx"
+          TAVILY_AVAILABLE=false
+          
+          # Try 1: Direct uvx with repo
+          if uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily --version 2>/dev/null; then
+            echo "✅ Tavily accessible via uvx (no auth)"
             TAVILY_AVAILABLE=true
+            TAVILY_CMD="uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily"
+          # Try 2: uvx with authentication  
+          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily --version 2>/dev/null; then
+            echo "✅ Tavily accessible via uvx (with auth)"
+            TAVILY_AVAILABLE=true
+            TAVILY_CMD="uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily"
+          # Try 3: Direct pip install then run
+          elif uv pip install git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git 2>/dev/null && command -v tavily >/dev/null 2>&1; then
+            echo "✅ Tavily installed and available"
+            TAVILY_AVAILABLE=true
+            TAVILY_CMD="tavily"
           else
-            echo "❌ Tavily not accessible via uvx - trying with authentication"
-            if uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily --version; then
-              echo "✅ Tavily accessible via uvx with authentication"
-              TAVILY_AVAILABLE=true
-              TAVILY_AUTH_URL="git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git"
-            else
-              echo "❌ Tavily not accessible even with authentication"
-              TAVILY_AVAILABLE=false
-            fi
+            echo "❌ Tavily not accessible via any method"
           fi
           
-          # Test gpt5 access  
+          # Test gpt5 access with multiple approaches
           echo "Testing gpt5..."
-          if uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5 --version; then
-            echo "✅ GPT-5 accessible via uvx"
+          GPT5_AVAILABLE=false
+          
+          # Try 1: Direct uvx with repo
+          if uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5 --version 2>/dev/null; then
+            echo "✅ GPT-5 accessible via uvx (no auth)"
             GPT5_AVAILABLE=true
+            GPT5_CMD="uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5"
+          # Try 2: uvx with authentication
+          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5 --version 2>/dev/null; then
+            echo "✅ GPT-5 accessible via uvx (with auth)"
+            GPT5_AVAILABLE=true
+            GPT5_CMD="uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5"
+          # Try 3: Direct pip install then run
+          elif uv pip install git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git 2>/dev/null && command -v gpt5 >/dev/null 2>&1; then
+            echo "✅ GPT-5 installed and available"
+            GPT5_AVAILABLE=true
+            GPT5_CMD="gpt5"
           else
-            echo "❌ GPT-5 not accessible via uvx - trying with authentication"
-            if uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5 --version; then
-              echo "✅ GPT-5 accessible via uvx with authentication"
-              GPT5_AVAILABLE=true
-              GPT5_AUTH_URL="git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git"
-            else
-              echo "❌ GPT-5 not accessible even with authentication"
-              GPT5_AVAILABLE=false
-            fi
+            echo "❌ GPT-5 not accessible via any method"
           fi
           
           # Export variables for use in later steps
           echo "TAVILY_AVAILABLE=$TAVILY_AVAILABLE" >> $GITHUB_ENV
           echo "GPT5_AVAILABLE=$GPT5_AVAILABLE" >> $GITHUB_ENV
-          echo "TAVILY_AUTH_URL=${TAVILY_AUTH_URL:-git+https://github.com/erdalgunes/tavily-cli.git}" >> $GITHUB_ENV
-          echo "GPT5_AUTH_URL=${GPT5_AUTH_URL:-git+https://github.com/erdalgunes/gpt5-cli.git}" >> $GITHUB_ENV
+          echo "TAVILY_CMD=${TAVILY_CMD:-uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily}" >> $GITHUB_ENV
+          echo "GPT5_CMD=${GPT5_CMD:-uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5}" >> $GITHUB_ENV
           
           # Summary of tool availability
           echo "📋 AI Tool Status:"
@@ -194,7 +206,7 @@ jobs:
           # Security research using Tavily (if available)
           if [ "$TAVILY_AVAILABLE" = "true" ] && [ -n "${{ steps.tavily-research.outputs.deps_changed }}" ]; then
             echo "## 🔐 Security Analysis"
-            uvx --from $TAVILY_AUTH_URL tavily "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 2>/dev/null || echo "⚠️ Security research failed"
+            $TAVILY_CMD "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 2>/dev/null || echo "⚠️ Security research failed"
             echo ""
           fi
           
@@ -216,14 +228,14 @@ jobs:
 
           Provide specific, actionable feedback with emojis. If no issues found, say so briefly."
 
-            # Run analysis with cost control using uvx
-            echo "$ANALYSIS_PROMPT" | uvx --from $GPT5_AUTH_URL gpt5 --effort medium --max-tokens 1000 2>/dev/null || echo "⚠️ Code analysis failed"
+            # Run analysis with cost control using determined command
+            echo "$ANALYSIS_PROMPT" | $GPT5_CMD --effort medium --max-tokens 1000 2>/dev/null || echo "⚠️ Code analysis failed"
           else
             echo "## 📝 Code Analysis"
             echo "⚠️ GPT-5 not available via uvx"
             if [ "$TAVILY_AVAILABLE" = "true" ]; then
               echo "🔍 Using Tavily for alternative analysis..."
-              uvx --from $TAVILY_AUTH_URL tavily "code review ${{ github.event.repository.name }} ${{ steps.tavily-research.outputs.file_types }} best practices" --max-results 3 2>/dev/null || echo "⚠️ Alternative analysis failed"
+              $TAVILY_CMD "code review ${{ github.event.repository.name }} ${{ steps.tavily-research.outputs.file_types }} best practices" --max-results 3 2>/dev/null || echo "⚠️ Alternative analysis failed"
             fi
           fi
           
