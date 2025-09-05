@@ -40,22 +40,39 @@ jobs:
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
+          # Configure git credentials for private repos
+          git config --global credential.helper store
+          echo "https://${{ secrets.GITHUB_TOKEN }}@github.com" > ~/.git-credentials
+          
           # Create uv project and install packages
           uv venv ai-tools
           source ai-tools/bin/activate
           
-          # Install tavily from private GitHub repo
-          uv pip install git+https://${{ secrets.GITHUB_TOKEN }}@github.com/erdalgunes/tavily.git
+          # Install tavily from private GitHub repo using gh cli
+          echo "Installing tavily..."
+          gh repo clone erdalgunes/tavily /tmp/tavily || true
+          if [ -d "/tmp/tavily" ]; then
+            uv pip install /tmp/tavily
+          else
+            echo "⚠️ Tavily repo not accessible, continuing without it"
+          fi
           
-          # Install gpt5 from private GitHub repo  
-          uv pip install git+https://${{ secrets.GITHUB_TOKEN }}@github.com/erdalgunes/gpt5.git
+          # Install gpt5 from private GitHub repo using gh cli
+          echo "Installing gpt5..." 
+          gh repo clone erdalgunes/gpt5 /tmp/gpt5 || true
+          if [ -d "/tmp/gpt5" ]; then
+            uv pip install /tmp/gpt5
+          else
+            echo "⚠️ GPT-5 repo not accessible, continuing without it"
+          fi
           
           # Add to PATH for subsequent steps
           echo "$(pwd)/ai-tools/bin" >> $GITHUB_PATH
           
           # Verify installation
-          tavily --version || echo "Tavily installed"
-          gpt5 --version || echo "GPT-5 installed"
+          echo "Checking installed tools:"
+          tavily --version 2>/dev/null || echo "Tavily: not available"
+          gpt5 --version 2>/dev/null || echo "GPT-5: not available"
           
       - name: Get Changed Files
         id: changed-files
