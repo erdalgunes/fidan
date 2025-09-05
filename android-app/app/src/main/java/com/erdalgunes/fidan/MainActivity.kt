@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import android.widget.Toast
 
 // Compose imports
 import androidx.compose.animation.core.animateFloatAsState
@@ -48,6 +49,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+// Gamification imports
+import com.erdalgunes.fidan.gamification.*
+import com.erdalgunes.fidan.ui.gamification.*
+import com.erdalgunes.fidan.ui.theme.*
+
 // Kotlinx imports
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -61,22 +67,33 @@ import com.erdalgunes.fidan.ui.viewmodel.ImpactViewModel
 import com.erdalgunes.fidan.ui.viewmodel.ImpactViewModelFactory
 import com.erdalgunes.fidan.ui.viewmodel.ImpactUiState
 import com.erdalgunes.fidan.ui.viewmodel.ErrorType
+import com.erdalgunes.fidan.ui.ErrorScreen
+import com.erdalgunes.fidan.gamification.*
 import com.erdalgunes.fidan.utils.UrlUtils
 
 class MainActivity : ComponentActivity(), TimerCallback {
     private lateinit var timerManager: TimerManager
     private lateinit var forestManager: ForestManager
+    private lateinit var timerRepository: com.erdalgunes.fidan.repository.TimerRepository
+    private lateinit var forestRepository: com.erdalgunes.fidan.repository.ForestRepository
+    private lateinit var gamificationManager: com.erdalgunes.fidan.gamification.GamificationManager
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        timerManager = TimerManager(this, lifecycleScope)
-        forestManager = ForestManager(this)
+        // Initialize repositories following dependency injection pattern
+        timerRepository = com.erdalgunes.fidan.repository.DefaultTimerRepository()
+        forestRepository = com.erdalgunes.fidan.repository.DefaultForestRepository(this)
+        gamificationManager = com.erdalgunes.fidan.gamification.GamificationManager(this)
+        
+        // Initialize managers with repositories (following dependency inversion)
+        timerManager = TimerManager(this, timerRepository, lifecycleScope)
+        forestManager = ForestManager(this) // Will be refactored to use repository
         
         setContent {
             FidanTheme {
-                FidanApp(timerManager, forestManager)
+                FidanApp(timerManager, forestManager, forestRepository, gamificationManager)
             }
         }
     }
@@ -94,27 +111,79 @@ class MainActivity : ComponentActivity(), TimerCallback {
     }
     
     override fun onSessionCompleted() {
-        // Add tree to forest when session is completed
-        val sessionData = SessionData(
-            taskName = "Focus Session",
-            durationMillis = 25 * 60 * 1000L,
-            completedDate = java.util.Date(),
-            wasCompleted = true
-        )
-        forestManager.addTree(sessionData)
+        // Process session completion through gamification system
+        lifecycleScope.launch {
+            val sessionData = SessionData(
+                taskName = "Focus Session",
+                durationMillis = 25 * 60 * 1000L,
+                completedDate = java.util.Date(),
+                wasCompleted = true
+            )
+            
+            // Process gamification rewards and achievements
+            val gamificationResult = gamificationManager.processSessionComplete(sessionData)
+            gamificationResult.onSuccess { result ->
+                // Show rewards and achievements to user
+                if (result.newAchievements.isNotEmpty()) {
+                    showToast("🏆 Achievement unlocked! ${result.newAchievements.first().title}")
+                }
+                
+                if (result.newLevel != null) {
+                    showToast("🎉 Level up! You're now level ${result.newLevel}")
+                }
+            }.onError { exception, message ->
+                showToast("Progress couldn't be saved: $message")
+            }
+            
+            // Add tree to forest
+            val forestResult = forestRepository.addTree(sessionData)
+            forestResult.onError { exception, message ->
+                showToast("Tree couldn't be saved: $message")
+            }
+        }
     }
     
     override fun onSessionStopped(wasRunning: Boolean, timeElapsed: Long) {
-        // Add incomplete tree if session was stopped early
+        // Process incomplete session if it was running and had progress
         if (wasRunning && timeElapsed > 0) {
-            val sessionData = SessionData(
-                taskName = "Focus Session (Stopped)",
-                durationMillis = timeElapsed,
-                completedDate = java.util.Date(),
-                wasCompleted = false
-            )
-            forestManager.addTree(sessionData)
+            lifecycleScope.launch {
+                val sessionData = SessionData(
+                    taskName = "Focus Session (Stopped)",
+                    durationMillis = timeElapsed,
+                    completedDate = java.util.Date(),
+                    wasCompleted = false
+                )
+                
+                // Process partial session through gamification (still earns some rewards)
+                val gamificationResult = gamificationManager.processSessionComplete(sessionData)
+                gamificationResult.onError { exception, message ->
+                    showToast("Progress couldn't be saved: $message")
+                }
+                
+                // Add incomplete tree to forest
+                val forestResult = forestRepository.addTree(sessionData)
+                forestResult.onError { exception, message ->
+                    showToast("Tree couldn't be saved: $message")
+                }
+            }
         }
+    }
+    
+    override fun onError(error: String, isRecoverable: Boolean) {
+        // New callback method for handling timer errors
+        showToast("Timer error: $error")
+        
+        if (!isRecoverable) {
+            // For non-recoverable errors, reset the timer
+            lifecycleScope.launch {
+                timerManager.resetTimer()
+            }
+        }
+    }
+    
+    private fun showToast(message: String) {
+        // Helper method to show user-friendly error messages
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show()
     }
     
     
@@ -129,7 +198,9 @@ class MainActivity : ComponentActivity(), TimerCallback {
 @Composable
 fun FidanApp(
     timerManager: TimerManager,
-    forestManager: ForestManager
+    forestManager: ForestManager,
+    forestRepository: com.erdalgunes.fidan.repository.ForestRepository,
+    gamificationManager: com.erdalgunes.fidan.gamification.GamificationManager
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var completedTrees by rememberSaveable { mutableIntStateOf(0) }
@@ -137,11 +208,33 @@ fun FidanApp(
     
     // Observe timer state from TimerManager
     val timerState by timerManager.state.collectAsState()
+    val timerUiState by timerManager.uiState.collectAsState()
+    
+    // Observe forest stats for error handling
+    var forestStats by remember { mutableStateOf<com.erdalgunes.fidan.repository.ForestStats?>(null) }
+    var forestError by remember { mutableStateOf<String?>(null) }
+    
+    // Observe gamification state - TEMPORARILY COMMENTED OUT
+    // val playerProgress by gamificationManager.playerProgress.collectAsState()
+    // val achievements by gamificationManager.achievements.collectAsState()
+    // val dailyChallenge by gamificationManager.dailyChallenge.collectAsState()
+    // val recentUnlocks by gamificationManager.recentUnlocks.collectAsState()
     
     // Handle session completion and early stopping
     LaunchedEffect(timerState.sessionCompleted, timerState.isRunning) {
         if (timerState.sessionCompleted && !timerState.isRunning) {
             completedTrees++
+        }
+    }
+    
+    // Load forest stats with error handling
+    LaunchedEffect(Unit) {
+        forestRepository.getForestStats().onSuccess { stats ->
+            forestStats = stats
+            completedTrees = stats.completedSessions
+            incompleteTrees = stats.incompleteSessions
+        }.onError { _, message ->
+            forestError = message
         }
     }
     
@@ -197,7 +290,7 @@ fun FidanApp(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
                     icon = { Text("📊", fontSize = 20.sp) },
-                    label = { Text("Stats") }
+                    label = { Text("Progress") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 3,
@@ -216,11 +309,22 @@ fun FidanApp(
                     if (timerState.timeLeftMillis < 25 * 60 * 1000L) {
                         incompleteTrees++
                     }
-                }
+                },
+                playerProgress = PlayerProgress(),
+                dailyChallenge = null,
+                recentUnlocks = emptyList(),
+                onClearUnlocks = { }
             )
-            1 -> NewForestScreen(innerPadding, forestManager)
-            2 -> StatsScreen(innerPadding, completedTrees, incompleteTrees)
-            3 -> ImpactScreen(innerPadding)
+            1 -> ForestPlaceholderScreen(innerPadding)
+            2 -> com.erdalgunes.fidan.ui.gamification.GamificationScreen(
+                paddingValues = innerPadding,
+                playerProgress = PlayerProgress(),
+                achievements = emptyList(),
+                dailyChallenge = null,
+                onPurchaseUpgrade = { },
+                onPrestige = { }
+            )
+            3 -> ImpactPlaceholderScreen(innerPadding)
         }
     }
 }
@@ -229,9 +333,14 @@ fun FidanApp(
 fun TimerScreen(
     paddingValues: PaddingValues,
     timerManager: TimerManager,
-    onSessionStopped: () -> Unit
+    onSessionStopped: () -> Unit,
+    playerProgress: PlayerProgress = PlayerProgress(),
+    dailyChallenge: DailyChallenge? = null,
+    recentUnlocks: List<Achievement> = emptyList(),
+    onClearUnlocks: () -> Unit = {}
 ) {
     val timerState by timerManager.state.collectAsState()
+    val timerUiState by timerManager.uiState.collectAsState()
     
     val scale by animateFloatAsState(
         targetValue = if (timerState.isRunning) 1.1f else 1f,
@@ -240,6 +349,24 @@ fun TimerScreen(
     )
     
     val timeText = timerManager.getCurrentTimeText()
+    
+    // Handle error states
+    when (val currentUiState = timerUiState) {
+        is com.erdalgunes.fidan.common.TimerUiState.Error -> {
+            ErrorScreen(
+                paddingValues = paddingValues,
+                message = currentUiState.message,
+                canRecover = currentUiState.canRecover,
+                onRetry = { 
+                    if (currentUiState.canRecover) {
+                        timerManager.resetTimer()
+                    }
+                }
+            )
+            return
+        }
+        else -> { /* Continue with normal timer UI */ }
+    }
     
     Column(
         modifier = Modifier
@@ -256,20 +383,69 @@ fun TimerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Timer Circle
-        Box(
+        // Top gamification bar
+        Row(
             modifier = Modifier
-                .size(200.dp)
-                .scale(scale)
-                .clip(CircleShape)
-                .background(
-                    when {
-                        timerState.treeWithering -> Color(0xFFFFF3E0)
-                        else -> Color.White
-                    }
-                ),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            com.erdalgunes.fidan.ui.gamification.CurrencyDisplay(
+                currency = playerProgress.currency,
+                modifier = Modifier.weight(1f),
+                compact = true
+            )
+            
+            com.erdalgunes.fidan.ui.gamification.PlayerLevelDisplay(
+                playerLevel = playerProgress.level,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        
+        // Daily challenge (if available and not completed)
+        dailyChallenge?.let { challenge ->
+            if (!challenge.isCompleted) {
+                var isExpanded by remember { mutableStateOf(false) }
+                com.erdalgunes.fidan.ui.gamification.DailyChallengeCard(
+                    dailyChallenge = challenge,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp),
+                    isCollapsed = !isExpanded,
+                    onToggleCollapse = { isExpanded = !isExpanded }
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Timer Circle with session progress overlay
+        Box(
+            modifier = Modifier.size(220.dp).scale(scale),
             contentAlignment = Alignment.Center
         ) {
+            com.erdalgunes.fidan.ui.gamification.SessionProgressOverlay(
+                progress = 1f - (timerState.timeLeftMillis.toFloat() / (25 * 60 * 1000L)),
+                timeLeft = timerState.timeLeftMillis,
+                totalTime = 25 * 60 * 1000L,
+                modifier = Modifier.size(220.dp)
+            )
+            
+            // Inner timer circle
+            Box(
+                modifier = Modifier
+                    .size(200.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when {
+                            timerState.treeWithering -> Color(0xFFFFF3E0)
+                            else -> Color.White
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Show tree emoji based on state
                 Text(
@@ -351,9 +527,16 @@ fun TimerScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
     }
+    
+    // Achievement notifications overlay
+    com.erdalgunes.fidan.ui.gamification.AchievementNotification(
+        achievement = recentUnlocks.firstOrNull(),
+        onDismiss = onClearUnlocks
+    )
 }
 
-@Composable
+/*
+@Composable  
 fun NewForestScreen(
     paddingValues: PaddingValues,
     forestManager: ForestManager
@@ -459,6 +642,7 @@ fun NewForestScreen(
         }
     }
 }
+*/
 
 @Composable
 fun StatsScreen(
@@ -564,6 +748,7 @@ fun StatCard(
 }
 
 
+/*
 @Composable
 fun ImpactScreen(paddingValues: PaddingValues) {
     val context = LocalContext.current
@@ -615,6 +800,7 @@ fun ImpactScreen(paddingValues: PaddingValues) {
         }
     }
 }
+*/
 
 @Composable
 fun ImpactLoadingState() {
@@ -937,6 +1123,53 @@ fun AnimatedTreeCount(
         modifier = modifier
     )
 }
+
+@Composable
+fun ForestPlaceholderScreen(paddingValues: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "🌳 Forest View",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = "Coming Soon",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun ImpactPlaceholderScreen(paddingValues: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "🌍 Impact View", 
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = "Coming Soon",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable

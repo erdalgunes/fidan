@@ -1,5 +1,7 @@
 package com.erdalgunes.fidan
 
+import com.erdalgunes.fidan.repository.DefaultTimerRepository
+import com.erdalgunes.fidan.repository.TimerRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
 import org.junit.After
@@ -17,13 +19,15 @@ class TimerManagerTest {
     private lateinit var callback: TimerCallback
     
     private lateinit var timerManager: TimerManager
+    private lateinit var timerRepository: TimerRepository
     private lateinit var testScope: TestScope
 
     @Before
     fun setup() {
         MockitoAnnotations.openMocks(this)
         testScope = TestScope()
-        timerManager = TimerManager(callback, testScope)
+        timerRepository = DefaultTimerRepository()
+        timerManager = TimerManager(callback, timerRepository, testScope)
     }
 
     @After
