@@ -1,0 +1,105 @@
+name: Build Artifact Cleanup
+
+on:
+  # Run weekly on Sunday at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * 0'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (show what would be cleaned)'
+        required: false
+        default: 'false'
+        type: boolean
+      force:
+        description: 'Force cleanup even with uncommitted changes'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  cleanup-artifacts:
+    name: Clean Build Artifacts
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all worktrees
+          
+      - name: Setup Git Worktrees
+        run: |
+          echo "🔍 Setting up git worktrees..."
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          
+          # List existing worktrees
+          echo "Current worktrees:"
+          git worktree list || echo "No additional worktrees found"
+          
+      - name: Run Build Artifact Cleanup
+        run: |
+          echo "🚀 Starting build artifact cleanup..."
+          
+          # Prepare flags
+          FLAGS=""
+          if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
+            FLAGS="$FLAGS --dry-run"
+          fi
+          if [[ "${{ github.event.inputs.force }}" == "true" ]]; then
+            FLAGS="$FLAGS --force"
+          fi
+          FLAGS="$FLAGS --verbose"
+          
+          # Make script executable
+          chmod +x scripts/cleanup-build-artifacts.sh
+          
+          # Run cleanup
+          ./scripts/cleanup-build-artifacts.sh $FLAGS
+          
+      - name: Upload Cleanup Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanup-log-${{ github.run_number }}
+          path: scripts/cleanup.log
+          retention-days: 30
+          
+      - name: Report Results
+        if: always()
+        run: |
+          echo "📊 Cleanup Results:"
+          if [[ -f scripts/cleanup.log ]]; then
+            echo "Log file contents:"
+            tail -10 scripts/cleanup.log
+            
+            # Extract space saved from log
+            SPACE_SAVED=$(grep "Total space" scripts/cleanup.log | tail -1 || echo "No cleanup data found")
+            echo "::notice title=Cleanup Complete::$SPACE_SAVED"
+          else
+            echo "::warning::No cleanup log found"
+          fi
+          
+      - name: Commit Log File (if not dry-run)
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          if [[ -f scripts/cleanup.log ]]; then
+            git add scripts/cleanup.log
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "chore: update build cleanup log [skip ci]
+              
+              Automated cleanup performed by GitHub Actions
+              
+              🤖 Generated with GitHub Actions"
+              git push origin main
+            fi
+          fi
