@@ -1,0 +1,211 @@
+name: AI-Powered PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    # Skip draft PRs to save costs
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.pull_request.draft }}
+    
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Get Changed Files
+        id: changed-files
+        run: |
+          # Get list of changed files with their status
+          git diff --name-status origin/${{ github.base_ref }}...${{ github.sha }} > changed_files.txt
+          echo "Files changed:"
+          cat changed_files.txt
+          
+          # Count changes for cost control
+          TOTAL_CHANGES=$(git diff --numstat origin/${{ github.base_ref }}...${{ github.sha }} | awk '{ lines += $1 + $2 } END { print lines }')
+          echo "total_changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
+          
+          # Skip review if changes are too large (cost control)
+          if [ "$TOTAL_CHANGES" -gt 2000 ]; then
+            echo "skip_review=true" >> $GITHUB_OUTPUT
+            echo "⚠️ PR too large ($TOTAL_CHANGES lines) - skipping AI review for cost control"
+          else
+            echo "skip_review=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Research Dependencies and Security
+        if: steps.changed-files.outputs.skip_review == 'false'
+        id: tavily-research
+        run: |
+          echo "Researching security and best practices..."
+          
+          # Extract dependency changes
+          DEPS_CHANGED=""
+          if grep -q "build.gradle\|package.json\|requirements.txt\|Cargo.toml\|go.mod" changed_files.txt; then
+            DEPS_CHANGED="Dependencies modified in this PR"
+          fi
+          
+          # Extract file types for targeted research  
+          FILE_TYPES=$(git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | sed 's/.*\.//' | sort -u | tr '\n' ' ')
+          echo "file_types=$FILE_TYPES" >> $GITHUB_OUTPUT
+          echo "deps_changed=$DEPS_CHANGED" >> $GITHUB_OUTPUT
+          
+          # Research security if dependencies changed
+          if [ -n "$DEPS_CHANGED" ]; then
+            echo "🔍 Dependencies changed - will research security implications"
+          fi
+          
+      - name: AI Code Analysis
+        if: steps.changed-files.outputs.skip_review == 'false'
+        id: ai-analysis
+        run: |
+          # Create a focused diff for analysis (limit size for cost control)
+          git diff origin/${{ github.base_ref }}...${{ github.sha }} -- '*.kt' '*.java' '*.js' '*.ts' '*.py' '*.go' '*.rs' > code_diff.txt
+          
+          # Truncate if too large
+          if [ $(wc -c < code_diff.txt) -gt 50000 ]; then
+            head -c 50000 code_diff.txt > code_diff_truncated.txt
+            mv code_diff_truncated.txt code_diff.txt
+            echo "⚠️ Code diff truncated for analysis" >> analysis_notes.txt
+          fi
+          
+          echo "📊 Code diff prepared for AI analysis ($(wc -c < code_diff.txt) chars)"
+          
+      - name: Generate AI Review
+        if: steps.changed-files.outputs.skip_review == 'false'
+        run: |
+          cat > review_script.sh << 'EOF'
+          #!/bin/bash
+          
+          echo "# 🤖 AI-Powered Code Review"
+          echo ""
+          
+          # Security research using Tavily (if available)
+          if command -v tavily >/dev/null 2>&1 && [ -n "${{ steps.tavily-research.outputs.deps_changed }}" ]; then
+            echo "## 🔐 Security Analysis"
+            tavily "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 2>/dev/null || echo "⚠️ Security research unavailable"
+            echo ""
+          fi
+          
+          # Code analysis using GPT-5 (if available)  
+          if command -v gpt5 >/dev/null 2>&1; then
+            echo "## 📝 Code Analysis"
+            
+            # Create analysis prompt
+            ANALYSIS_PROMPT="Analyze this code diff for a ${{ github.event.repository.name }} project:
+
+          $(head -c 30000 code_diff.txt 2>/dev/null || echo "No code diff available")
+
+          Focus on:
+          1. Potential bugs or issues
+          2. Security concerns  
+          3. Performance implications
+          4. Code quality improvements
+          5. Architecture feedback
+
+          Provide specific, actionable feedback. If no issues found, say so briefly."
+
+            # Run analysis with cost control
+            echo "$ANALYSIS_PROMPT" | gpt5 --effort low --max-tokens 800 2>/dev/null || echo "⚠️ Code analysis unavailable"
+          else
+            echo "⚠️ GPT-5 not available for code analysis"
+          fi
+          
+          echo ""
+          echo "## 📋 Review Summary"
+          echo "- **Changed files**: $(wc -l < changed_files.txt)"
+          echo "- **Total changes**: ${{ steps.changed-files.outputs.total_changes }} lines"
+          echo "- **File types**: ${{ steps.tavily-research.outputs.file_types }}"
+          echo "- **Dependencies**: ${{ steps.tavily-research.outputs.deps_changed || 'No dependency changes detected' }}"
+          
+          echo ""
+          echo "---"
+          echo "*🤖 Generated by AI PR Review Bot | [Feedback](https://github.com/${{ github.repository }}/issues)*"
+          EOF
+          
+          chmod +x review_script.sh
+          ./review_script.sh > ai_review.md
+          
+      - name: Post AI Review Comment
+        if: steps.changed-files.outputs.skip_review == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read the AI review
+            let reviewContent = '';
+            try {
+              reviewContent = fs.readFileSync('ai_review.md', 'utf8');
+            } catch (error) {
+              reviewContent = '## 🤖 AI Review\n\n⚠️ Review generation failed. Please check the logs.';
+            }
+            
+            // Check if we already commented on this PR
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.body.includes('🤖 Generated by AI PR Review Bot')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: reviewContent
+              });
+              console.log('Updated existing AI review comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: reviewContent
+              });
+              console.log('Created new AI review comment');
+            }
+            
+      - name: Handle Large PR
+        if: steps.changed-files.outputs.skip_review == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reviewContent = `## 🤖 AI Review - PR Too Large
+            
+            This PR has ${{ steps.changed-files.outputs.total_changes }} lines of changes, which exceeds our analysis limit of 2000 lines.
+            
+            **Recommendations:**
+            - Consider splitting this PR into smaller, focused changes
+            - Each PR should ideally be < 500 lines for better reviewability
+            - Use our [PR size guidelines](.github/pr-scope-guidelines.md) for reference
+            
+            *🤖 AI review will be available once the PR size is reduced*`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: reviewContent
+            });
