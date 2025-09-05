@@ -48,9 +48,13 @@ jobs:
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
-          # Authenticate with GitHub for git operations
+          # Configure git credentials for private repository access
           gh auth status
-          echo "🔧 Installing AI tools directly via uv from GitHub repositories..."
+          echo "🔧 Configuring git credentials for private repository access..."
+          
+          # Set up git credentials for uv to use
+          git config --global credential.helper store
+          echo "https://github-actions:${GH_TOKEN}@github.com" > ~/.git-credentials
           
           # Create uv project and install packages
           uv venv ai-tools
