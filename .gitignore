@@ -24,4 +24,8 @@ garmin-app/bin/
 # IDE
 .vscode/
 *.swp
-*.swo
+*.swodocs-venv/
+docs-env/
+site/
+*.pyc
+__pycache__/
