@@ -10,10 +10,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.erdalgunes.fidan.R
 import com.erdalgunes.fidan.CircuitMainActivity
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class TimerForegroundService : Service() {

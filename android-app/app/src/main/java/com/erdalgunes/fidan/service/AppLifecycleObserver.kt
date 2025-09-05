@@ -8,17 +8,13 @@ import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
-
 data class AppLifecycleState(
     val isInForeground: Boolean = true,
     val backgroundStartTime: Long = 0L,
     val totalBackgroundTime: Long = 0L
 )
 
-@Singleton
-class AppLifecycleObserver @Inject constructor(
+class AppLifecycleObserver(
     private val timerService: TimerService
 ) : DefaultLifecycleObserver {
     

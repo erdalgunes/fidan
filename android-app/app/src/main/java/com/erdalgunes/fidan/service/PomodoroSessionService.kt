@@ -8,11 +8,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class PomodoroSessionService @Inject constructor(
+class PomodoroSessionService constructor(
     private val sessionTimer: SessionTimer
 ) : PomodoroSessionManager {
     

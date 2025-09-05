@@ -12,13 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.*
-import javax.inject.Inject
-import javax.inject.Singleton
-import dagger.hilt.android.qualifiers.ApplicationContext
 
-@Singleton
-class ForestService @Inject constructor(
-    @ApplicationContext private val context: Context
+class ForestService constructor(
+    private val context: Context
 ) {
     
     companion object {

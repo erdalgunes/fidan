@@ -7,9 +7,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import javax.inject.Singleton
-import dagger.hilt.android.qualifiers.ApplicationContext
 import com.erdalgunes.fidan.domain.SessionTimer
 
 data class TimerServiceState(
@@ -20,9 +17,8 @@ data class TimerServiceState(
     val isPaused: Boolean = false
 )
 
-@Singleton
-class TimerService @Inject constructor(
-    @ApplicationContext private val context: Context,
+class TimerService constructor(
+    private val context: Context,
     private val forestService: ForestService
 ) : SessionTimer {
     
