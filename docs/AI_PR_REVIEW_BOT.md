@@ -99,11 +99,11 @@ The bot gracefully handles missing optional tools.
 
 ### 🔐 Private Repository Access Setup
 
-**Current Status:** The bot can see the repositories exist:
-- https://github.com/erdalgunes/tavily-cli ✅ 
-- https://github.com/erdalgunes/gpt5-cli ✅
+**Current Status:** Private repositories confirmed:
+- https://github.com/erdalgunes/tavily-cli 🔒 (Private)
+- https://github.com/erdalgunes/gpt5-cli 🔒 (Private)
 
-**Issue:** GitHub Actions token cannot access private repositories outside the current repository context.
+**Issue:** GitHub Actions `GITHUB_TOKEN` cannot access private repositories outside the current repository context. This is a GitHub security limitation.
 
 **Solution Options:**
 

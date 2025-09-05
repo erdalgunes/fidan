@@ -43,18 +43,29 @@ jobs:
           
       - name: Install AI CLI Tools
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use Personal Access Token if available, fallback to GITHUB_TOKEN
+          GH_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
           # Configure git credentials for private repository access
+          if [ -n "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
+            echo "🔑 Using Personal Access Token for private repository access"
+          else
+            echo "⚠️ Using GitHub Actions token (limited private repo access)"
+            echo "💡 Add PERSONAL_GITHUB_TOKEN secret for full functionality"
+          fi
+          
           gh auth status
           echo "🔧 Configuring git credentials for private repository access..."
           
-          # Set up git credentials for uv to use
-          git config --global credential.helper store
-          echo "https://github-actions:${GH_TOKEN}@github.com" > ~/.git-credentials
+          # Set up git credentials for private repository access
+          git config --global credential.helper store  
+          echo "https://${GH_TOKEN}@github.com" > ~/.git-credentials
+          
+          # Also configure git to use the token for authentication
+          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
           
           # Create uv project and install packages
           uv venv ai-tools
