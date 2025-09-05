@@ -1,0 +1,165 @@
+# Multi-Agent Issue Resolver Configuration
+
+agents:
+  analyzer:
+    name: "Issue Analyzer"
+    role: "Analyze GitHub issues and create implementation plans"
+    tools:
+      - gpt5
+      - gh_cli
+    effort_level: medium
+    
+  researcher:
+    name: "Research Agent"
+    role: "Research best practices and solutions"
+    tools:
+      - tavily
+      - gpt5
+    search_depth: advanced
+    max_results: 5
+    topics:
+      - "Android Kotlin best practices"
+      - "Jetpack Compose patterns"
+      - "SOLID principles implementation"
+      
+  implementer:
+    name: "Implementation Agent"
+    role: "Write code following researched patterns"
+    tools:
+      - gpt5
+      - file_system
+    effort_level: high
+    principles:
+      - SOLID
+      - DRY
+      - KISS
+      - YAGNI
+      
+  reviewers:
+    code_quality:
+      name: "Code Quality Reviewer"
+      role: "Review code quality and standards"
+      checks:
+        - readability
+        - error_handling
+        - performance
+        - conventions
+      veto_power: true
+      
+    testing:
+      name: "Testing Reviewer"
+      role: "Verify test coverage and quality"
+      checks:
+        - test_coverage
+        - edge_cases
+        - test_execution
+      veto_power: true
+      
+    principles:
+      name: "Principles Reviewer"
+      role: "Verify SOLID/DRY/KISS/YAGNI adherence"
+      checks:
+        - single_responsibility
+        - no_duplication
+        - simplicity
+        - no_overengineering
+      veto_power: true
+
+  merger:
+    name: "Merge Agent"
+    role: "Handle PR creation and merging"
+    auto_merge: true
+    require_all_approvals: true
+    squash_merge: true
+
+workflow:
+  phases:
+    - analyze
+    - research
+    - implement
+    - review
+    - merge
+    
+  review_rounds: 3
+  max_iterations: 5
+  timeout_minutes: 30
+  
+  failure_handling:
+    rollback_on_failure: true
+    notify_on_failure: true
+    create_draft_pr: true
+
+research_patterns:
+  android_timer:
+    keywords:
+      - "Android CountDownTimer"
+      - "timer persistence SharedPreferences"
+      - "background timer handling"
+    
+  notifications:
+    keywords:
+      - "Android NotificationCompat"
+      - "notification channels"
+      - "foreground service notification"
+      
+  api_integration:
+    keywords:
+      - "Retrofit error handling"
+      - "offline queue implementation"
+      - "API retry strategy"
+
+code_patterns:
+  file_naming:
+    - "follow existing conventions"
+    - "use Kotlin file extensions"
+    
+  imports:
+    - "organize by Android, AndroidX, third-party, app"
+    - "avoid wildcard imports"
+    
+  style:
+    - "use Kotlin idioms"
+    - "prefer expression bodies"
+    - "use data classes"
+
+review_criteria:
+  code_quality:
+    min_score: 80
+    checks:
+      - no_commented_code
+      - proper_naming
+      - consistent_style
+      - error_handling
+      
+  testing:
+    min_coverage: 70
+    require_tests_for:
+      - new_features
+      - bug_fixes
+      - public_apis
+      
+  principles:
+    strict_mode: true
+    allow_technical_debt: false
+    max_method_lines: 30
+    max_class_lines: 200
+
+automation_settings:
+  enabled: true
+  allowed_issue_labels:
+    - "good first issue"
+    - "bug"
+    - "enhancement"
+    - "auto-approved"
+  
+  excluded_issue_labels:
+    - "breaking-change"
+    - "security"
+    - "manual-only"
+    
+  max_file_changes: 10
+  max_lines_changed: 500
+  
+  branch_naming: "auto-issue-{issue_number}"
+  commit_prefix: "fix: "
+  pr_prefix: "Auto: "
