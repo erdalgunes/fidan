@@ -183,7 +183,7 @@ jobs:
         id: ai-analysis
         run: |
           # Create a focused diff for analysis (limit size for cost control)
-          git diff origin/${{ github.base_ref }}...${{ github.sha }} -- '*.kt' '*.java' '*.js' '*.ts' '*.py' '*.go' '*.rs' > code_diff.txt
+          git diff origin/${{ github.base_ref }}...${{ github.sha }} -- '*.kt' '*.java' '*.js' '*.ts' '*.py' '*.go' '*.rs' '*.sh' '*.yml' '*.yaml' '*.md' > code_diff.txt
           
           # Truncate if too large
           if [ $(wc -c < code_diff.txt) -gt 50000 ]; then
@@ -232,7 +232,7 @@ jobs:
           Provide specific, actionable feedback with emojis. If no issues found, say so briefly."
 
             # Run analysis with cost control using determined command
-            echo "$ANALYSIS_PROMPT" | $GPT5_CMD --effort medium --max-tokens 1000 || echo "⚠️ Code analysis failed"
+            $GPT5_CMD "$ANALYSIS_PROMPT" --effort medium --max-tokens 1000 || echo "⚠️ Code analysis failed"
           else
             echo "## 📝 Code Analysis"
             echo "⚠️ GPT-5 not available via uvx"
