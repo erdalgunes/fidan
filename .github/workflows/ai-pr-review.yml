@@ -75,12 +75,12 @@ jobs:
           TAVILY_AVAILABLE=false
           
           # Try 1: Direct uvx with repo
-          if uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily --version; then
+          if uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily --help > /dev/null 2>&1; then
             echo "✅ Tavily accessible via uvx (no auth)"
             TAVILY_AVAILABLE=true
             TAVILY_CMD="uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily"
           # Try 2: uvx with authentication  
-          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily --version; then
+          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily --help > /dev/null 2>&1; then
             echo "✅ Tavily accessible via uvx (with auth)"
             TAVILY_AVAILABLE=true
             TAVILY_CMD="uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily"
@@ -98,12 +98,12 @@ jobs:
           GPT5_AVAILABLE=false
           
           # Try 1: Direct uvx with repo
-          if uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5 --version; then
+          if uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5 --help > /dev/null 2>&1; then
             echo "✅ GPT-5 accessible via uvx (no auth)"
             GPT5_AVAILABLE=true
             GPT5_CMD="uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5"
           # Try 2: uvx with authentication
-          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5 --version; then
+          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5 --help > /dev/null 2>&1; then
             echo "✅ GPT-5 accessible via uvx (with auth)"
             GPT5_AVAILABLE=true
             GPT5_CMD="uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5"
