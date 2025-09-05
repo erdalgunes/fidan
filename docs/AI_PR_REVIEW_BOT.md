@@ -99,28 +99,31 @@ The bot gracefully handles missing optional tools.
 
 ### 🔐 Private Repository Access Setup
 
-For full AI functionality with private `tavily-cli` and `gpt5-cli` repositories:
+**Current Status:** The bot can see the repositories exist:
+- https://github.com/erdalgunes/tavily-cli ✅ 
+- https://github.com/erdalgunes/gpt5-cli ✅
 
-1. **Create Personal Access Token:**
-   - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-   - Generate token with `repo` scope for private repository access
-   - Copy the token (starts with `ghp_` or `github_pat_`)
+**Issue:** GitHub Actions token cannot access private repositories outside the current repository context.
 
-2. **Add Repository Secret:**
-   - Go to your repository Settings → Secrets and variables → Actions
-   - Click "New repository secret"
-   - Name: `PERSONAL_GITHUB_TOKEN`
-   - Value: Your personal access token
-   - Click "Add secret"
+**Solution Options:**
 
-3. **Verify Setup:**
-   - The next PR update will show: `🔑 Using Personal Access Token for private repo access`
-   - AI tools should show: `✅ Tavily: installed` and `✅ GPT-5: installed`
+**Option 1: Personal Access Token (Recommended)**
+1. Create PAT: GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Generate token with `repo` scope for private repository access
+3. Add repository secret: `PERSONAL_GITHUB_TOKEN` = your token
+4. Bot will automatically detect and use the PAT
 
-**Without Personal Access Token:**
-- Bot uses GitHub Actions token (limited access)
-- Shows: `⚠️ Using GitHub Actions token (limited private repo access)`
-- AI tools unavailable: `❌ Tavily: not available`
+**Option 2: Make Repositories Public** 
+- Change repository visibility to public in repository settings
+- Bot will work immediately with existing GitHub Actions token
+
+**Option 3: Alternative Implementation**
+- Use public AI APIs instead of private CLI tools
+- Modify bot to use OpenAI API directly
+
+**Verification:**
+- Successful: `✅ Can access erdalgunes/tavily-cli`
+- Failed: `❌ Tavily repo not accessible` with clear instructions
 
 ## 📧 Notification Management
 

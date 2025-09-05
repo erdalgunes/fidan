@@ -43,23 +43,31 @@ jobs:
           
       - name: Install AI CLI Tools
         env:
-          # Use Personal Access Token for private repo access (fallback to GITHUB_TOKEN)
-          GH_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
-          # Check token type and authenticate
-          if [ -n "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
-            echo "🔑 Using Personal Access Token for private repo access"
-            echo "${{ secrets.PERSONAL_GITHUB_TOKEN }}" | gh auth login --with-token || true
+          # Authenticate and check repository access
+          gh auth status
+          echo "🔍 Testing access to private repositories..."
+          
+          # Test if we can access the repositories
+          if gh repo view erdalgunes/tavily-cli --json name >/dev/null 2>&1; then
+            echo "✅ Can access erdalgunes/tavily-cli"
+            TAVILY_ACCESSIBLE=true
           else
-            echo "⚠️ Using GitHub Actions token (limited private repo access)"
-            echo "💡 Add PERSONAL_GITHUB_TOKEN secret for full functionality"
-            echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token || true
+            echo "❌ Cannot access erdalgunes/tavily-cli"
+            TAVILY_ACCESSIBLE=false
           fi
           
-          gh auth status
+          if gh repo view erdalgunes/gpt5-cli --json name >/dev/null 2>&1; then
+            echo "✅ Can access erdalgunes/gpt5-cli" 
+            GPT5_ACCESSIBLE=true
+          else
+            echo "❌ Cannot access erdalgunes/gpt5-cli"
+            GPT5_ACCESSIBLE=false
+          fi
           
           # Create uv project and install packages
           uv venv ai-tools
@@ -67,32 +75,36 @@ jobs:
           
           # Install tavily from private GitHub repo using gh cli
           echo "Installing tavily..."
-          if gh repo clone erdalgunes/tavily-cli /tmp/tavily-cli; then
-            echo "✅ Tavily repo cloned successfully"
-            uv pip install /tmp/tavily-cli
-            echo "✅ Tavily installed via uv"
-          else
-            echo "❌ Tavily repo clone failed"
-            if [ -z "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
-              echo "🔐 Likely cause: GitHub Actions token cannot access private repos"
-              echo "💡 Solution: Add PERSONAL_GITHUB_TOKEN secret with repo access"
+          if [ "$TAVILY_ACCESSIBLE" = "true" ]; then
+            if gh repo clone erdalgunes/tavily-cli /tmp/tavily-cli; then
+              echo "✅ Tavily repo cloned successfully"
+              uv pip install /tmp/tavily-cli
+              echo "✅ Tavily installed via uv"
+            else
+              echo "❌ Tavily repo clone failed despite access check"
             fi
-            gh repo list erdalgunes --limit 10 | grep -i tavily || echo "No tavily repo found in list"
+          else
+            echo "❌ Tavily repo not accessible"
+            echo "🔐 Repository https://github.com/erdalgunes/tavily-cli exists but token lacks access"
+            echo "💡 Current token: $(gh auth status 2>&1 | grep 'account:' || echo 'GitHub Actions bot')"
+            echo "💡 Need: Personal Access Token with private repo access"
           fi
           
           # Install gpt5 from private GitHub repo using gh cli
           echo "Installing gpt5..." 
-          if gh repo clone erdalgunes/gpt5-cli /tmp/gpt5-cli; then
-            echo "✅ GPT-5 repo cloned successfully"
-            uv pip install /tmp/gpt5-cli
-            echo "✅ GPT-5 installed via uv"
-          else
-            echo "❌ GPT-5 repo clone failed"
-            if [ -z "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
-              echo "🔐 Likely cause: GitHub Actions token cannot access private repos"
-              echo "💡 Solution: Add PERSONAL_GITHUB_TOKEN secret with repo access"
+          if [ "$GPT5_ACCESSIBLE" = "true" ]; then
+            if gh repo clone erdalgunes/gpt5-cli /tmp/gpt5-cli; then
+              echo "✅ GPT-5 repo cloned successfully"
+              uv pip install /tmp/gpt5-cli
+              echo "✅ GPT-5 installed via uv"
+            else
+              echo "❌ GPT-5 repo clone failed despite access check"
             fi
-            gh repo list erdalgunes --limit 10 | grep -i gpt5 || echo "No gpt5 repo found in list"
+          else
+            echo "❌ GPT-5 repo not accessible"
+            echo "🔐 Repository https://github.com/erdalgunes/gpt5-cli exists but token lacks access"
+            echo "💡 Current token: $(gh auth status 2>&1 | grep 'account:' || echo 'GitHub Actions bot')"
+            echo "💡 Need: Personal Access Token with private repo access"
           fi
           
           # Add to PATH for subsequent steps
