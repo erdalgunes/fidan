@@ -23,10 +23,39 @@ jobs:
         with:
           fetch-depth: 0
           
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Python and uv
+        uses: actions/setup-python@v5
         with:
-          node-version: '20'
+          python-version: '3.11'
+          
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Install AI CLI Tools
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Install private tavily and gpt5 packages from GitHub
+          echo "Installing tavily and gpt5 CLI tools..."
+          
+          # Create uv project and install packages
+          uv venv ai-tools
+          source ai-tools/bin/activate
+          
+          # Install tavily from private GitHub repo
+          uv pip install git+https://${{ secrets.GITHUB_TOKEN }}@github.com/erdalgunes/tavily.git
+          
+          # Install gpt5 from private GitHub repo  
+          uv pip install git+https://${{ secrets.GITHUB_TOKEN }}@github.com/erdalgunes/gpt5.git
+          
+          # Add to PATH for subsequent steps
+          echo "$(pwd)/ai-tools/bin" >> $GITHUB_PATH
+          
+          # Verify installation
+          tavily --version || echo "Tavily installed"
+          gpt5 --version || echo "GPT-5 installed"
           
       - name: Get Changed Files
         id: changed-files
@@ -92,13 +121,16 @@ jobs:
           cat > review_script.sh << 'EOF'
           #!/bin/bash
           
+          # Activate AI tools environment
+          source ai-tools/bin/activate 2>/dev/null || true
+          
           echo "# 🤖 AI-Powered Code Review"
           echo ""
           
           # Security research using Tavily (if available)
           if command -v tavily >/dev/null 2>&1 && [ -n "${{ steps.tavily-research.outputs.deps_changed }}" ]; then
             echo "## 🔐 Security Analysis"
-            tavily "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 2>/dev/null || echo "⚠️ Security research unavailable"
+            tavily "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 2>/dev/null || echo "⚠️ Security research failed"
             echo ""
           fi
           
@@ -112,18 +144,21 @@ jobs:
           $(head -c 30000 code_diff.txt 2>/dev/null || echo "No code diff available")
 
           Focus on:
-          1. Potential bugs or issues
-          2. Security concerns  
-          3. Performance implications
-          4. Code quality improvements
-          5. Architecture feedback
+          1. 🐛 Potential bugs or issues
+          2. 🔒 Security concerns  
+          3. ⚡ Performance implications
+          4. 🧹 Code quality improvements
+          5. 🏗️ Architecture feedback
 
-          Provide specific, actionable feedback. If no issues found, say so briefly."
+          Provide specific, actionable feedback with emojis. If no issues found, say so briefly."
 
             # Run analysis with cost control
-            echo "$ANALYSIS_PROMPT" | gpt5 --effort low --max-tokens 800 2>/dev/null || echo "⚠️ Code analysis unavailable"
+            echo "$ANALYSIS_PROMPT" | gpt5 --effort medium --max-tokens 1000 2>/dev/null || echo "⚠️ Code analysis failed"
           else
-            echo "⚠️ GPT-5 not available for code analysis"
+            echo "## 📝 Code Analysis"
+            echo "⚠️ GPT-5 not available - checking installation..."
+            echo "PATH: $PATH"
+            echo "Which gpt5: $(which gpt5 2>/dev/null || echo 'not found')"
           fi
           
           echo ""
