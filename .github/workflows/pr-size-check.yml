@@ -1,0 +1,204 @@
+name: PR Size and Scope Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-pr-size:
+    name: Check PR Size
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Get PR Stats
+        id: pr-stats
+        run: |
+          # Get the number of changed files
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | wc -l)
+          echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          
+          # Get additions and deletions
+          ADDITIONS=$(git diff --numstat origin/${{ github.base_ref }}...${{ github.sha }} | awk '{ additions += $1 } END { print additions }')
+          DELETIONS=$(git diff --numstat origin/${{ github.base_ref }}...${{ github.sha }} | awk '{ deletions += $2 } END { print deletions }')
+          TOTAL_CHANGES=$((ADDITIONS + DELETIONS))
+          
+          echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
+          echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
+          echo "total_changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
+          
+      - name: Check PR Size Limits
+        id: check-size
+        run: |
+          TOTAL_CHANGES=${{ steps.pr-stats.outputs.total_changes }}
+          CHANGED_FILES=${{ steps.pr-stats.outputs.changed_files }}
+          
+          # Define thresholds
+          MAX_CHANGES=1500
+          MAX_FILES=20
+          WARNING_CHANGES=1000
+          WARNING_FILES=15
+          
+          STATUS="ok"
+          MESSAGE=""
+          
+          if [ "$TOTAL_CHANGES" -gt "$MAX_CHANGES" ] || [ "$CHANGED_FILES" -gt "$MAX_FILES" ]; then
+            STATUS="too_large"
+            MESSAGE="❌ PR is too large! Changes: $TOTAL_CHANGES (max: $MAX_CHANGES), Files: $CHANGED_FILES (max: $MAX_FILES)"
+          elif [ "$TOTAL_CHANGES" -gt "$WARNING_CHANGES" ] || [ "$CHANGED_FILES" -gt "$WARNING_FILES" ]; then
+            STATUS="warning"
+            MESSAGE="⚠️ PR is getting large. Changes: $TOTAL_CHANGES, Files: $CHANGED_FILES. Consider splitting if it grows more."
+          else
+            STATUS="ok"
+            MESSAGE="✅ PR size is good. Changes: $TOTAL_CHANGES, Files: $CHANGED_FILES"
+          fi
+          
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+          
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.check-size.outputs.status }}';
+            const message = '${{ steps.check-size.outputs.message }}';
+            const additions = '${{ steps.pr-stats.outputs.additions }}';
+            const deletions = '${{ steps.pr-stats.outputs.deletions }}';
+            const files = '${{ steps.pr-stats.outputs.changed_files }}';
+            
+            let comment = `## 📊 PR Size Analysis\n\n`;
+            comment += `${message}\n\n`;
+            comment += `### Statistics\n`;
+            comment += `- **Files Changed**: ${files}\n`;
+            comment += `- **Lines Added**: +${additions}\n`;
+            comment += `- **Lines Deleted**: -${deletions}\n`;
+            comment += `- **Total Changes**: ${parseInt(additions) + parseInt(deletions)}\n\n`;
+            
+            if (status === 'too_large') {
+              comment += `### 🔄 Recommended Actions\n`;
+              comment += `1. **Split this PR** into smaller, focused changes\n`;
+              comment += `2. **Group related changes** together\n`;
+              comment += `3. **Aim for <1000 lines** per PR for easier review\n\n`;
+              comment += `### Why Smaller PRs?\n`;
+              comment += `- ✅ Faster review cycles (15-30 min vs hours)\n`;
+              comment += `- ✅ Easier to identify issues\n`;
+              comment += `- ✅ Lower risk of merge conflicts\n`;
+              comment += `- ✅ Better commit history\n`;
+              comment += `- ✅ Can be merged incrementally\n`;
+            } else if (status === 'warning') {
+              comment += `### 💡 Tips\n`;
+              comment += `- Consider if this PR has a single, clear purpose\n`;
+              comment += `- Check if any changes could be split into follow-up PRs\n`;
+              comment += `- Ensure all changes are related to the PR title\n`;
+            }
+            
+            // Find and update or create comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('PR Size Analysis')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+            
+            // Fail the check if PR is too large
+            if (status === 'too_large') {
+              core.setFailed('PR exceeds size limits. Please split into smaller PRs.');
+            }
+            
+      - name: Label PR by Size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const total = ${{ steps.pr-stats.outputs.total_changes }};
+            let label = '';
+            
+            if (total < 50) {
+              label = 'size/XS';
+            } else if (total < 200) {
+              label = 'size/S';
+            } else if (total < 500) {
+              label = 'size/M';
+            } else if (total < 1000) {
+              label = 'size/L';
+            } else if (total < 1500) {
+              label = 'size/XL';
+            } else {
+              label = 'size/XXL';
+            }
+            
+            // Remove any existing size labels
+            const labels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            for (const existingLabel of labels.data) {
+              if (existingLabel.name.startsWith('size/')) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: existingLabel.name,
+                });
+              }
+            }
+            
+            // Add the new size label
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [label]
+              });
+            } catch (error) {
+              console.log('Label might not exist, creating it...');
+              // Create label if it doesn't exist
+              const colors = {
+                'size/XS': '69db7c',
+                'size/S': '40c057',
+                'size/M': 'fab005',
+                'size/L': 'fd7e14',
+                'size/XL': 'f76707',
+                'size/XXL': 'e03131'
+              };
+              
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: label,
+                color: colors[label] || 'cccccc'
+              });
+              
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [label]
+              });
+            }
