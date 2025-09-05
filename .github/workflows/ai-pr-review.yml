@@ -40,8 +40,8 @@ jobs:
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
-          # Authenticate gh CLI explicitly
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          # Authenticate gh CLI explicitly (handle case where GH_TOKEN is already set)
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token || true
           gh auth status
           
           # Create uv project and install packages
