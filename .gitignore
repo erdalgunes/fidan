@@ -14,9 +14,31 @@ android-app/.idea/
 
 # Garmin Connect IQ
 garmin-app/bin/
+garmin-app/gen/
+garmin-app/external-mir/
+garmin-app/internal-mir/
 *.prg
 *.prg.debug.xml
 *.barrel
+*.der
+*.pem
+
+# Development/automation artifacts
+*_report_*.json
+development_report.json
+fixed_development_report.json
+github_automator.log
+*orchestrator.py
+changed_files.txt
+automation_report_*.json
+
+# Temporary files from scripts
+*.tmp
+temp_*
+ai_review.md
+code_diff.txt
+analysis_prompt.txt
+final_review.md
 
 # macOS
 .DS_Store
@@ -24,4 +46,8 @@ garmin-app/bin/
 # IDE
 .vscode/
 *.swp
-*.swo
+*.swodocs-venv/
+docs-env/
+site/
+*.pyc
+__pycache__/

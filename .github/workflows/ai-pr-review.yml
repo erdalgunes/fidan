@@ -1,0 +1,348 @@
+name: AI-Powered PR Review
+
+on:
+  pull_request:
+    types: [opened, reopened]  # Removed 'synchronize' to reduce noise
+    # Skip draft PRs to save costs
+    branches: [main, develop]
+  issue_comment:
+    types: [created]  # Allow manual triggering with /ai-review comment
+  workflow_dispatch:  # Allow manual runs
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    if: |
+      ${{ 
+        (github.event_name == 'pull_request' && !github.event.pull_request.draft && !contains(github.event.pull_request.labels.*.name, 'skip-ai-review')) ||
+        (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/ai-review')) ||
+        (github.event_name == 'workflow_dispatch')
+      }}
+    
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Python and uv
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Install AI CLI Tools
+        env:
+          # Use Personal Access Token if available, fallback to GITHUB_TOKEN
+          GH_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          # Install private tavily and gpt5 packages from GitHub
+          echo "Installing tavily and gpt5 CLI tools..."
+          
+          # Configure git credentials for private repository access
+          if [ -n "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
+            echo "🔑 Using Personal Access Token for private repository access"
+          else
+            echo "⚠️ Using GitHub Actions token (limited private repo access)"
+            echo "💡 Add PERSONAL_GITHUB_TOKEN secret for full functionality"
+          fi
+          
+          gh auth status
+          echo "🔧 Configuring git credentials for private repository access..."
+          
+          # Set up git credentials for private repository access
+          git config --global credential.helper store  
+          echo "https://${GH_TOKEN}@github.com" > ~/.git-credentials
+          
+          # Also configure git to use the token for authentication
+          git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+          
+          # Test uvx access to private repositories
+          echo "🧪 Testing uvx access to private AI tools..."
+          
+          # Test tavily access with multiple approaches
+          echo "Testing tavily..."
+          TAVILY_AVAILABLE=false
+          
+          # Try 1: Direct uvx with repo
+          if uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily --help > /dev/null 2>&1; then
+            echo "✅ Tavily accessible via uvx (no auth)"
+            TAVILY_AVAILABLE=true
+            TAVILY_CMD="uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily"
+          # Try 2: uvx with authentication  
+          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily --help > /dev/null 2>&1; then
+            echo "✅ Tavily accessible via uvx (with auth)"
+            TAVILY_AVAILABLE=true
+            TAVILY_CMD="uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git tavily"
+          # Try 3: Direct pip install then run
+          elif uv pip install git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git 2>/dev/null && command -v tavily >/dev/null 2>&1; then
+            echo "✅ Tavily installed and available"
+            TAVILY_AVAILABLE=true
+            TAVILY_CMD="tavily"
+          else
+            echo "❌ Tavily not accessible via any method"
+          fi
+          
+          # Test gpt5 access with multiple approaches
+          echo "Testing gpt5..."
+          GPT5_AVAILABLE=false
+          
+          # Try 1: Direct uvx with repo
+          if uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5 --help > /dev/null 2>&1; then
+            echo "✅ GPT-5 accessible via uvx (no auth)"
+            GPT5_AVAILABLE=true
+            GPT5_CMD="uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5"
+          # Try 2: uvx with authentication
+          elif uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5 --help > /dev/null 2>&1; then
+            echo "✅ GPT-5 accessible via uvx (with auth)"
+            GPT5_AVAILABLE=true
+            GPT5_CMD="uvx --from git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git gpt5"
+          # Try 3: Direct pip install then run
+          elif uv pip install git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git 2>/dev/null && command -v gpt5 >/dev/null 2>&1; then
+            echo "✅ GPT-5 installed and available"
+            GPT5_AVAILABLE=true
+            GPT5_CMD="gpt5"
+          else
+            echo "❌ GPT-5 not accessible via any method"
+          fi
+          
+          # Export variables for use in later steps
+          echo "TAVILY_AVAILABLE=$TAVILY_AVAILABLE" >> $GITHUB_ENV
+          echo "GPT5_AVAILABLE=$GPT5_AVAILABLE" >> $GITHUB_ENV
+          echo "TAVILY_CMD=${TAVILY_CMD:-uvx --from git+https://github.com/erdalgunes/tavily-cli.git tavily}" >> $GITHUB_ENV
+          echo "GPT5_CMD=${GPT5_CMD:-uvx --from git+https://github.com/erdalgunes/gpt5-cli.git gpt5}" >> $GITHUB_ENV
+          
+          # Summary of tool availability
+          echo "📋 AI Tool Status:"
+          if [ "$TAVILY_AVAILABLE" = "true" ]; then
+            echo "✅ Tavily: Available via uvx"
+          else
+            echo "❌ Tavily: Not available"
+          fi
+          
+          if [ "$GPT5_AVAILABLE" = "true" ]; then
+            echo "✅ GPT-5: Available via uvx"
+          else
+            echo "❌ GPT-5: Not available"
+          fi
+          
+      - name: Get Changed Files
+        id: changed-files
+        run: |
+          # Get list of changed files with their status
+          git diff --name-status origin/${{ github.base_ref }}...${{ github.sha }} > changed_files.txt
+          echo "Files changed:"
+          cat changed_files.txt
+          
+          # Create a summary for the AI
+          echo "## Changed Files Summary" > changed_summary.txt
+          echo "Primary changes (excluding workflows):" >> changed_summary.txt
+          git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | grep -v "^.github/workflows/" | head -20 >> changed_summary.txt || true
+          
+          # Count changes for cost control
+          TOTAL_CHANGES=$(git diff --numstat origin/${{ github.base_ref }}...${{ github.sha }} | awk '{ lines += $1 + $2 } END { print lines }')
+          echo "total_changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
+          
+          # Skip review if changes are too large (cost control)
+          if [ "$TOTAL_CHANGES" -gt 2000 ]; then
+            echo "skip_review=true" >> $GITHUB_OUTPUT
+            echo "⚠️ PR too large ($TOTAL_CHANGES lines) - skipping AI review for cost control"
+          else
+            echo "skip_review=false" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Research Dependencies and Security
+        if: steps.changed-files.outputs.skip_review == 'false'
+        id: tavily-research
+        run: |
+          echo "Researching security and best practices..."
+          
+          # Extract dependency changes
+          DEPS_CHANGED=""
+          if grep -q "build.gradle\|package.json\|requirements.txt\|Cargo.toml\|go.mod" changed_files.txt; then
+            DEPS_CHANGED="Dependencies modified in this PR"
+          fi
+          
+          # Extract file types for targeted research  
+          FILE_TYPES=$(git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | sed 's/.*\.//' | sort -u | tr '\n' ' ')
+          echo "file_types=$FILE_TYPES" >> $GITHUB_OUTPUT
+          echo "deps_changed=$DEPS_CHANGED" >> $GITHUB_OUTPUT
+          
+          # Research security if dependencies changed
+          if [ -n "$DEPS_CHANGED" ]; then
+            echo "🔍 Dependencies changed - will research security implications"
+          fi
+          
+      - name: AI Code Analysis
+        if: steps.changed-files.outputs.skip_review == 'false'
+        id: ai-analysis
+        run: |
+          # Create a focused diff for analysis (exclude workflow files to avoid meta-confusion)
+          git diff origin/${{ github.base_ref }}...${{ github.sha }} -- '*.kt' '*.java' '*.js' '*.ts' '*.py' '*.go' '*.rs' '*.sh' '*.md' '*.gradle' '*.xml' '*.json' '*.properties' '*.gitignore' ':!.github/workflows/*' > code_diff.txt
+          
+          # Truncate if too large
+          if [ $(wc -c < code_diff.txt) -gt 50000 ]; then
+            head -c 50000 code_diff.txt > code_diff_truncated.txt
+            mv code_diff_truncated.txt code_diff.txt
+            echo "⚠️ Code diff truncated for analysis" >> analysis_notes.txt
+          fi
+          
+          echo "📊 Code diff prepared for AI analysis ($(wc -c < code_diff.txt) chars)"
+          
+      - name: Generate AI Review
+        if: steps.changed-files.outputs.skip_review == 'false'
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          cat > review_script.sh << 'EOF'
+          #!/bin/bash
+          
+          echo "# 🤖 AI-Powered Code Review"
+          echo ""
+          
+          # Security research using Tavily (if available)
+          if [ "$TAVILY_AVAILABLE" = "true" ] && [ -n "${{ steps.tavily-research.outputs.deps_changed }}" ]; then
+            echo "## 🔐 Security Analysis"
+            $TAVILY_CMD "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 || echo "⚠️ Security research failed"
+            echo ""
+          fi
+          
+          # Code analysis using GPT-5 (if available)  
+          if [ "$GPT5_AVAILABLE" = "true" ]; then
+            echo "## 📝 Code Analysis (Powered by GPT-5)"
+            echo ""
+            
+            # Create analysis prompt with context
+            ANALYSIS_PROMPT="You are reviewing a pull request titled: '${{ github.event.pull_request.title }}'
+
+          PR Description: Review the following code changes and provide specific feedback.
+          
+          Main files changed (excluding CI/CD):
+          $(cat changed_summary.txt 2>/dev/null || cat changed_files.txt | head -20)
+          
+          Code diff to analyze:
+          $(head -c 25000 code_diff.txt 2>/dev/null || echo "No code diff available")
+
+          Instructions:
+          1. Focus on the ACTUAL changes in this PR, not meta files
+          2. Review each changed file for:
+             - 🐛 Bugs or logic errors
+             - 🔒 Security issues
+             - ⚡ Performance problems
+             - 🧹 Code quality issues
+             - ✅ Good practices worth noting
+          3. Be specific - reference file names and line numbers when possible
+          4. If the changes look good, say so clearly
+          5. Keep feedback concise and actionable
+
+          Provide your review with emojis for clarity. Focus on the actual PR purpose, not incidental changes."
+
+            # Run analysis with cost control using determined command
+            echo "🤖 Analyzing code with GPT-5..."
+            $GPT5_CMD "$ANALYSIS_PROMPT" --effort low --max-tokens 800 || echo "⚠️ Code analysis failed - check API key configuration"
+            echo ""
+          else
+            echo "## 📝 Code Analysis"
+            echo "⚠️ GPT-5 not available"
+            if [ "$TAVILY_AVAILABLE" = "true" ]; then
+              echo "🔍 Using Tavily for alternative analysis..."
+              $TAVILY_CMD "code review ${{ github.event.repository.name }} ${{ steps.tavily-research.outputs.file_types }} best practices" --max-results 3 || echo "⚠️ Alternative analysis failed"
+            else
+              echo "❌ No AI tools available for analysis"
+            fi
+          fi
+          
+          echo ""
+          echo "## 📋 Review Summary"
+          echo "- **Changed files**: $(wc -l < changed_files.txt)"
+          echo "- **Total changes**: ${{ steps.changed-files.outputs.total_changes }} lines"
+          echo "- **File types**: ${{ steps.tavily-research.outputs.file_types }}"
+          echo "- **Dependencies**: ${{ steps.tavily-research.outputs.deps_changed || 'No dependency changes detected' }}"
+          
+          echo ""
+          echo "---"
+          echo "*🤖 Generated by AI PR Review Bot at $(date -u +"%Y-%m-%d %H:%M UTC") | [Feedback](https://github.com/${{ github.repository }}/issues)*"
+          EOF
+          
+          chmod +x review_script.sh
+          ./review_script.sh > ai_review.md
+          
+      - name: Post AI Review Comment
+        if: steps.changed-files.outputs.skip_review == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read the AI review
+            let reviewContent = '';
+            try {
+              reviewContent = fs.readFileSync('ai_review.md', 'utf8');
+            } catch (error) {
+              reviewContent = '## 🤖 AI Review\n\n⚠️ Review generation failed. Please check the logs.';
+            }
+            
+            // Check if we already commented on this PR
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.body.includes('🤖 Generated by AI PR Review Bot')
+            );
+            
+            if (botComment) {
+              // Always update with fresh AI analysis
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: reviewContent
+              });
+              console.log('Updated existing AI review comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: reviewContent
+              });
+              console.log('Created new AI review comment');
+            }
+            
+      - name: Handle Large PR
+        if: steps.changed-files.outputs.skip_review == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reviewContent = `## 🤖 AI Review - PR Too Large
+            
+            This PR has ${{ steps.changed-files.outputs.total_changes }} lines of changes, which exceeds our analysis limit of 2000 lines.
+            
+            **Recommendations:**
+            - Consider splitting this PR into smaller, focused changes
+            - Each PR should ideally be < 500 lines for better reviewability
+            - Use our [PR size guidelines](.github/pr-scope-guidelines.md) for reference
+            
+            *🤖 AI review will be available once the PR size is reduced*`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: reviewContent
+            });

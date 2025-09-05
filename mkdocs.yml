@@ -1,0 +1,64 @@
+site_name: Fidan - Pomodoro Focus App
+site_description: Documentation for Fidan - Android and Garmin Watch Pomodoro Timer
+repo_url: https://github.com/erdalgunes/fidan
+repo_name: erdalgunes/fidan
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.annotate
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Deployment:
+    - Android Deployment: ANDROID_DEPLOYMENT.md
+    - Pre-flight Checks: PREFLIGHT.md
+
+plugins:
+  - search
+  - macros
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - tables
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/erdalgunes/fidan
+  version:
+    provider: mike
