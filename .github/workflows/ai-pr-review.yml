@@ -48,63 +48,38 @@ jobs:
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
-          # Authenticate and check repository access
+          # Authenticate with GitHub for git operations
           gh auth status
-          echo "🔍 Testing access to private repositories..."
-          
-          # Test if we can access the repositories
-          if gh repo view erdalgunes/tavily-cli --json name >/dev/null 2>&1; then
-            echo "✅ Can access erdalgunes/tavily-cli"
-            TAVILY_ACCESSIBLE=true
-          else
-            echo "❌ Cannot access erdalgunes/tavily-cli"
-            TAVILY_ACCESSIBLE=false
-          fi
-          
-          if gh repo view erdalgunes/gpt5-cli --json name >/dev/null 2>&1; then
-            echo "✅ Can access erdalgunes/gpt5-cli" 
-            GPT5_ACCESSIBLE=true
-          else
-            echo "❌ Cannot access erdalgunes/gpt5-cli"
-            GPT5_ACCESSIBLE=false
-          fi
+          echo "🔧 Installing AI tools directly via uv from GitHub repositories..."
           
           # Create uv project and install packages
           uv venv ai-tools
           source ai-tools/bin/activate
           
-          # Install tavily from private GitHub repo using gh cli
-          echo "Installing tavily..."
-          if [ "$TAVILY_ACCESSIBLE" = "true" ]; then
-            if gh repo clone erdalgunes/tavily-cli /tmp/tavily-cli; then
-              echo "✅ Tavily repo cloned successfully"
-              uv pip install /tmp/tavily-cli
-              echo "✅ Tavily installed via uv"
-            else
-              echo "❌ Tavily repo clone failed despite access check"
-            fi
+          # Install tavily directly from GitHub using uv
+          echo "Installing tavily from GitHub..."
+          if uv pip install git+https://github.com/erdalgunes/tavily-cli.git; then
+            echo "✅ Tavily installed successfully via uv"
           else
-            echo "❌ Tavily repo not accessible"
-            echo "🔐 Repository https://github.com/erdalgunes/tavily-cli exists but token lacks access"
-            echo "💡 Current token: $(gh auth status 2>&1 | grep 'account:' || echo 'GitHub Actions bot')"
-            echo "💡 Need: Personal Access Token with private repo access"
+            echo "❌ Tavily installation failed - trying with authentication"
+            if uv pip install git+https://${GH_TOKEN}@github.com/erdalgunes/tavily-cli.git; then
+              echo "✅ Tavily installed successfully with authentication"
+            else
+              echo "❌ Tavily installation failed even with authentication"
+            fi
           fi
           
-          # Install gpt5 from private GitHub repo using gh cli
-          echo "Installing gpt5..." 
-          if [ "$GPT5_ACCESSIBLE" = "true" ]; then
-            if gh repo clone erdalgunes/gpt5-cli /tmp/gpt5-cli; then
-              echo "✅ GPT-5 repo cloned successfully"
-              uv pip install /tmp/gpt5-cli
-              echo "✅ GPT-5 installed via uv"
-            else
-              echo "❌ GPT-5 repo clone failed despite access check"
-            fi
+          # Install gpt5 directly from GitHub using uv
+          echo "Installing gpt5 from GitHub..."
+          if uv pip install git+https://github.com/erdalgunes/gpt5-cli.git; then
+            echo "✅ GPT-5 installed successfully via uv"
           else
-            echo "❌ GPT-5 repo not accessible"
-            echo "🔐 Repository https://github.com/erdalgunes/gpt5-cli exists but token lacks access"
-            echo "💡 Current token: $(gh auth status 2>&1 | grep 'account:' || echo 'GitHub Actions bot')"
-            echo "💡 Need: Personal Access Token with private repo access"
+            echo "❌ GPT-5 installation failed - trying with authentication"
+            if uv pip install git+https://${GH_TOKEN}@github.com/erdalgunes/gpt5-cli.git; then
+              echo "✅ GPT-5 installed successfully with authentication"
+            else
+              echo "❌ GPT-5 installation failed even with authentication"
+            fi
           fi
           
           # Add to PATH for subsequent steps
