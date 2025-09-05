@@ -1,0 +1,14 @@
+[2025-09-05 05:54:13] INFO: Starting build artifact cleanup (dry-run: true, force: false)
+[2025-09-05 05:54:13] WARN: Skipped /Users/erdalgunes/fidan-workspace/main due to uncommitted changes
+[2025-09-05 05:54:29] INFO: Starting build artifact cleanup (dry-run: true, force: false)
+[2025-09-05 05:54:29] WARN: Skipped /Users/erdalgunes/fidan-workspace/main due to uncommitted changes
+[2025-09-05 05:54:29] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/issue-11-garmin-integration
+[2025-09-05 05:54:29] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/issue-14-material3-design
+[2025-09-05 05:54:30] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/issue-4-timer
+[2025-09-05 05:54:30] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/issue-46
+[2025-09-05 05:54:30] WARN: Skipped /Users/erdalgunes/fidan-workspace/issue-49-build-cleanup-fixed due to uncommitted changes
+[2025-09-05 05:54:30] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/issue-6
+[2025-09-05 05:54:30] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/issue-7
+[2025-09-05 05:54:30] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/issue-9-android-setup
+[2025-09-05 05:54:30] WARN: Worktree path does not exist: /Users/erdalgunes/fidan-workspace/main/issue-39-garmin-sync
+[2025-09-05 05:54:30] INFO: Cleanup completed. Total space saved: 0B
