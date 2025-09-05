@@ -49,12 +49,19 @@ An intelligent code review bot that combines Tavily web research with GPT-5 anal
 
 ## Setup & Usage
 
-### GitHub Action (Automatic)
+### GitHub Action (Notification-Friendly)
 
-1. The bot is already configured in `.github/workflows/ai-pr-review.yml`
-2. Triggers automatically on PR open/update events
-3. Posts reviews as PR comments
-4. Updates existing comments instead of creating duplicates
+The bot is designed to minimize email notifications:
+
+1. **Triggers only on:** PR opened/reopened (not every push)
+2. **Manual triggering:** Comment `/ai-review` on any PR to run analysis
+3. **Smart updates:** Only updates comments when content meaningfully changes
+4. **Easy disable:** Add `skip-ai-review` label to any PR to disable bot
+
+**Trigger Options:**
+- Automatic: New PRs only (reduces notification spam)
+- Manual: Comment `/ai-review` on any PR
+- Label control: Add `skip-ai-review` label to disable
 
 #### Configuration Options:
 
@@ -114,6 +121,23 @@ For full AI functionality with private `tavily-cli` and `gpt5-cli` repositories:
 - Bot uses GitHub Actions token (limited access)
 - Shows: `⚠️ Using GitHub Actions token (limited private repo access)`
 - AI tools unavailable: `❌ Tavily: not available`
+
+## 📧 Notification Management
+
+**Reduced Email Notifications:**
+- Bot only runs on PR creation (not every push)
+- Comment updates are skipped when no meaningful changes
+- Use `/ai-review` comment for manual analysis only when needed
+
+**Complete Disable Options:**
+1. **Per PR:** Add `skip-ai-review` label to specific PRs
+2. **Temporarily:** Disable the workflow file in Actions tab
+3. **Permanently:** Delete `.github/workflows/ai-pr-review.yml`
+
+**GitHub Notification Settings:**
+- Go to GitHub Settings → Notifications
+- Customize "Pull requests" and "Issues" notification preferences
+- Consider "Web and mobile" only for bot comments
 
 ## Review Format
 
