@@ -1,6 +1,6 @@
 package com.erdalgunes.fidan.garmin
 
-import java.util.Date
+import java.time.Instant
 
 /**
  * Represents a focus session completed on the Garmin watch.
@@ -10,7 +10,7 @@ data class WatchSession(
     val timestamp: Long, // Unix timestamp when session completed
     val durationSeconds: Int, // Session duration (typically 1500 for 25 minutes)
     val deviceId: String, // Unique identifier for the watch
-    val completedAt: Date = Date(timestamp * 1000), // Convert Unix timestamp to Date
+    val completedAt: Instant = Instant.ofEpochSecond(timestamp),
     val source: String = "watch" // Identifier showing this came from watch
 ) {
     
