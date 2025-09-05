@@ -90,6 +90,31 @@ SKIP_DRAFTS: true        # Don't analyze draft PRs
 
 The bot gracefully handles missing optional tools.
 
+### 🔐 Private Repository Access Setup
+
+For full AI functionality with private `tavily-cli` and `gpt5-cli` repositories:
+
+1. **Create Personal Access Token:**
+   - Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+   - Generate token with `repo` scope for private repository access
+   - Copy the token (starts with `ghp_` or `github_pat_`)
+
+2. **Add Repository Secret:**
+   - Go to your repository Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `PERSONAL_GITHUB_TOKEN`
+   - Value: Your personal access token
+   - Click "Add secret"
+
+3. **Verify Setup:**
+   - The next PR update will show: `🔑 Using Personal Access Token for private repo access`
+   - AI tools should show: `✅ Tavily: installed` and `✅ GPT-5: installed`
+
+**Without Personal Access Token:**
+- Bot uses GitHub Actions token (limited access)
+- Shows: `⚠️ Using GitHub Actions token (limited private repo access)`
+- AI tools unavailable: `❌ Tavily: not available`
+
 ## Review Format
 
 ### Security & Research Section

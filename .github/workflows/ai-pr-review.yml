@@ -35,13 +35,22 @@ jobs:
           
       - name: Install AI CLI Tools
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use Personal Access Token for private repo access (fallback to GITHUB_TOKEN)
+          GH_TOKEN: ${{ secrets.PERSONAL_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
-          # Authenticate gh CLI explicitly (handle case where GH_TOKEN is already set)
-          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token || true
+          # Check token type and authenticate
+          if [ -n "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
+            echo "🔑 Using Personal Access Token for private repo access"
+            echo "${{ secrets.PERSONAL_GITHUB_TOKEN }}" | gh auth login --with-token || true
+          else
+            echo "⚠️ Using GitHub Actions token (limited private repo access)"
+            echo "💡 Add PERSONAL_GITHUB_TOKEN secret for full functionality"
+            echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token || true
+          fi
+          
           gh auth status
           
           # Create uv project and install packages
@@ -56,6 +65,10 @@ jobs:
             echo "✅ Tavily installed via uv"
           else
             echo "❌ Tavily repo clone failed"
+            if [ -z "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
+              echo "🔐 Likely cause: GitHub Actions token cannot access private repos"
+              echo "💡 Solution: Add PERSONAL_GITHUB_TOKEN secret with repo access"
+            fi
             gh repo list erdalgunes --limit 10 | grep -i tavily || echo "No tavily repo found in list"
           fi
           
@@ -67,6 +80,10 @@ jobs:
             echo "✅ GPT-5 installed via uv"
           else
             echo "❌ GPT-5 repo clone failed"
+            if [ -z "${{ secrets.PERSONAL_GITHUB_TOKEN }}" ]; then
+              echo "🔐 Likely cause: GitHub Actions token cannot access private repos"
+              echo "💡 Solution: Add PERSONAL_GITHUB_TOKEN secret with repo access"
+            fi
             gh repo list erdalgunes --limit 10 | grep -i gpt5 || echo "No gpt5 repo found in list"
           fi
           
