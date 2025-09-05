@@ -40,9 +40,9 @@ jobs:
           # Install private tavily and gpt5 packages from GitHub
           echo "Installing tavily and gpt5 CLI tools..."
           
-          # Configure git credentials for private repos
-          git config --global credential.helper store
-          echo "https://${{ secrets.GITHUB_TOKEN }}@github.com" > ~/.git-credentials
+          # Authenticate gh CLI explicitly
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          gh auth status
           
           # Create uv project and install packages
           uv venv ai-tools
@@ -50,20 +50,24 @@ jobs:
           
           # Install tavily from private GitHub repo using gh cli
           echo "Installing tavily..."
-          gh repo clone erdalgunes/tavily /tmp/tavily || true
-          if [ -d "/tmp/tavily" ]; then
+          if gh repo clone erdalgunes/tavily /tmp/tavily; then
+            echo "✅ Tavily repo cloned successfully"
             uv pip install /tmp/tavily
+            echo "✅ Tavily installed via uv"
           else
-            echo "⚠️ Tavily repo not accessible, continuing without it"
+            echo "❌ Tavily repo clone failed"
+            gh repo list erdalgunes --limit 10 | grep -i tavily || echo "No tavily repo found in list"
           fi
           
           # Install gpt5 from private GitHub repo using gh cli
           echo "Installing gpt5..." 
-          gh repo clone erdalgunes/gpt5 /tmp/gpt5 || true
-          if [ -d "/tmp/gpt5" ]; then
+          if gh repo clone erdalgunes/gpt5 /tmp/gpt5; then
+            echo "✅ GPT-5 repo cloned successfully"
             uv pip install /tmp/gpt5
+            echo "✅ GPT-5 installed via uv"
           else
-            echo "⚠️ GPT-5 repo not accessible, continuing without it"
+            echo "❌ GPT-5 repo clone failed"
+            gh repo list erdalgunes --limit 10 | grep -i gpt5 || echo "No gpt5 repo found in list"
           fi
           
           # Add to PATH for subsequent steps
@@ -71,8 +75,17 @@ jobs:
           
           # Verify installation
           echo "Checking installed tools:"
-          tavily --version 2>/dev/null || echo "Tavily: not available"
-          gpt5 --version 2>/dev/null || echo "GPT-5: not available"
+          if command -v tavily >/dev/null 2>&1; then
+            echo "✅ Tavily: $(tavily --version 2>/dev/null || echo 'installed but version check failed')"
+          else
+            echo "❌ Tavily: not available"
+          fi
+          
+          if command -v gpt5 >/dev/null 2>&1; then
+            echo "✅ GPT-5: $(gpt5 --version 2>/dev/null || echo 'installed but version check failed')"
+          else
+            echo "❌ GPT-5: not available"
+          fi
           
       - name: Get Changed Files
         id: changed-files
