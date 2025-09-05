@@ -1,3 +1,69 @@
 <resources>
     <string name="app_name">Fidan</string>
+    
+    <!-- Impact Screen Strings -->
+    <string name="impact_tab_label">Impact</string>
+    <string name="real_environmental_impact">Real Environmental Impact</string>
+    <string name="real_trees_planted">Real Trees Planted</string>
+    <string name="through_github_sponsors">Through GitHub Sponsors</string>
+    <string name="support_fidan">💚 Support Fidan</string>
+    <string name="sponsorship_description">Support Fidan development and environmental impact! 75%% of proceeds go directly to verified tree-planting organizations.</string>
+    <string name="sustainability_split">⚡ 75%% trees + 25%% maintenance = Sustainable impact</string>
+    <string name="become_sponsor">Become a Sponsor</string>
+    
+    <!-- Sponsorship Tiers -->
+    <string name="tier_seed">🌰 Seed</string>
+    <string name="tier_seedling">🌱 Seedling</string>
+    <string name="tier_sapling">🌿 Sapling</string>
+    <string name="tier_forest_guardian">🌳 Forest Guardian</string>
+    <string name="price_seed">$1/month</string>
+    <string name="price_seedling">$3/month</string>
+    <string name="price_sapling">$10/month</string>
+    <string name="price_forest_guardian">$25/month</string>
+    <string name="benefit_seed">Support the community</string>
+    <string name="benefit_seedling">Help maintain the app</string>
+    <string name="benefit_sapling">Fund new features</string>
+    <string name="benefit_forest_guardian">Champion sustainability</string>
+    
+    <!-- Transparency -->
+    <string name="transparency_title">📊 Transparency</string>
+    <string name="total_donations">Total Donations</string>
+    <string name="tree_planting_fund">Tree Planting Fund</string>
+    <string name="maintenance_fund">Maintenance Fund</string>
+    <string name="partner_organizations">Partner Organizations</string>
+    <string name="last_update">Last Update</string>
+    <string name="certificates_available">Certificates Available</string>
+    <string name="view_monthly_report">View Monthly Report</string>
+    <string name="tree_fund_percentage">75%% of proceeds</string>
+    <string name="maintenance_percentage">25%% for development</string>
+    <string name="active_partners">%d active</string>
+    <string name="view_planting_proofs">View planting proofs</string>
+    
+    <!-- Partners -->
+    <string name="our_partners">🤝 Our Partners</string>
+    <string name="partner_one_tree">One Tree Planted</string>
+    <string name="partner_eden">Eden Reforestation Projects</string>
+    <string name="partner_trees_future">Trees for the Future</string>
+    <string name="location_one_tree">North America &amp; Global</string>
+    <string name="location_eden">Madagascar, Haiti, Nepal</string>
+    <string name="location_trees_future">Sub-Saharan Africa</string>
+    <string name="partners_disclaimer" formatted="false">All partners are verified 501(c)(3) organizations with transparent impact reporting. 75% of sponsorship funds are donated to these organizations, 25% supports app development and maintenance.</string>
+    
+    <!-- Loading and Error States -->
+    <string name="loading">Loading…</string>
+    <string name="loading_impact_data">Loading impact data...</string>
+    <string name="error_loading_data">Failed to load impact data</string>
+    <string name="unable_to_load_impact_data">Unable to load impact data</string>
+    <string name="retry">Retry</string>
+    
+    <!-- Error Messages -->
+    <string name="network_timeout_error">Request timed out. Please check your connection and try again.</string>
+    <string name="network_error">Network error. Please check your connection and try again.</string>
+    <string name="generic_error">Something went wrong. Please try again later.</string>
+    
+    <!-- Additional UI Text -->
+    <string name="monthly_growth">Monthly Growth</string>
+    <string name="planting_certificates">Planting Certificates</string>
+    <string name="certificates_verified">%d verified</string>
+    <string name="monthly_growth_percent">+%.1f%%</string>
 </resources>
