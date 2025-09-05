@@ -51,7 +51,7 @@ Optional backend service for:
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](development/contributing.md) for details on:
+We welcome contributions! Please see our Contributing Guide for details on:
 - Setting up your development environment
 - Code standards and best practices
 - Submitting pull requests
