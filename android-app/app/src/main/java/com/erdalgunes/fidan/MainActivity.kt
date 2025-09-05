@@ -154,7 +154,7 @@ fun FidanApp(
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 actions = {
-                    IconButton(onClick = { /* TODO: Open settings */ }) {
+                    IconButton(onClick = { selectedTab = 4 }) {
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = "Settings",
@@ -206,6 +206,7 @@ fun FidanApp(
             1 -> ForestScreen(innerPadding, forestManager)
             2 -> StatsScreen(innerPadding, completedTrees, incompleteTrees)
             3 -> ImpactScreen(innerPadding)
+            4 -> SettingsScreen(innerPadding, onBackClick = { selectedTab = 0 })
         }
     }
 }
