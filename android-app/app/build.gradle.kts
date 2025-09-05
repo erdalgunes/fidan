@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
     kotlin("plugin.serialization") version "1.9.20"
 }
 
@@ -67,13 +69,22 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     
-    // Hilt - removed for simplified build
+    // Hilt for dependency injection (SOLID principle - Dependency Inversion)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
     
     // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     
-    // Projects - removed temporarily to get a working build
+    // Projects - Re-enabled for full functionality
+    implementation(project(":core:data"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:ui"))
+    implementation(project(":features:timer"))
+    implementation(project(":features:forest"))
+    implementation(project(":features:home"))
+    implementation(project(":features:settings"))
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)
