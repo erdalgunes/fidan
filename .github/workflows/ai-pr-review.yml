@@ -144,6 +144,11 @@ jobs:
           echo "Files changed:"
           cat changed_files.txt
           
+          # Create a summary for the AI
+          echo "## Changed Files Summary" > changed_summary.txt
+          echo "Primary changes (excluding workflows):" >> changed_summary.txt
+          git diff --name-only origin/${{ github.base_ref }}...${{ github.sha }} | grep -v "^.github/workflows/" | head -20 >> changed_summary.txt || true
+          
           # Count changes for cost control
           TOTAL_CHANGES=$(git diff --numstat origin/${{ github.base_ref }}...${{ github.sha }} | awk '{ lines += $1 + $2 } END { print lines }')
           echo "total_changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
@@ -182,8 +187,8 @@ jobs:
         if: steps.changed-files.outputs.skip_review == 'false'
         id: ai-analysis
         run: |
-          # Create a focused diff for analysis (limit size for cost control)
-          git diff origin/${{ github.base_ref }}...${{ github.sha }} -- '*.kt' '*.java' '*.js' '*.ts' '*.py' '*.go' '*.rs' '*.sh' '*.yml' '*.yaml' '*.md' > code_diff.txt
+          # Create a focused diff for analysis (exclude workflow files to avoid meta-confusion)
+          git diff origin/${{ github.base_ref }}...${{ github.sha }} -- '*.kt' '*.java' '*.js' '*.ts' '*.py' '*.go' '*.rs' '*.sh' '*.md' '*.gradle' '*.xml' '*.json' '*.properties' '*.gitignore' ':!.github/workflows/*' > code_diff.txt
           
           # Truncate if too large
           if [ $(wc -c < code_diff.txt) -gt 50000 ]; then
@@ -218,23 +223,34 @@ jobs:
             echo "## 📝 Code Analysis (Powered by GPT-5)"
             echo ""
             
-            # Create analysis prompt
-            ANALYSIS_PROMPT="Analyze this code diff for a ${{ github.event.repository.name }} project:
+            # Create analysis prompt with context
+            ANALYSIS_PROMPT="You are reviewing a pull request titled: '${{ github.event.pull_request.title }}'
 
-          $(head -c 30000 code_diff.txt 2>/dev/null || echo "No code diff available")
+          PR Description: Review the following code changes and provide specific feedback.
+          
+          Main files changed (excluding CI/CD):
+          $(cat changed_summary.txt 2>/dev/null || cat changed_files.txt | head -20)
+          
+          Code diff to analyze:
+          $(head -c 25000 code_diff.txt 2>/dev/null || echo "No code diff available")
 
-          Focus on:
-          1. 🐛 Potential bugs or issues
-          2. 🔒 Security concerns  
-          3. ⚡ Performance implications
-          4. 🧹 Code quality improvements
-          5. 🏗️ Architecture feedback
+          Instructions:
+          1. Focus on the ACTUAL changes in this PR, not meta files
+          2. Review each changed file for:
+             - 🐛 Bugs or logic errors
+             - 🔒 Security issues
+             - ⚡ Performance problems
+             - 🧹 Code quality issues
+             - ✅ Good practices worth noting
+          3. Be specific - reference file names and line numbers when possible
+          4. If the changes look good, say so clearly
+          5. Keep feedback concise and actionable
 
-          Provide specific, actionable feedback with emojis. If no issues found, say so briefly."
+          Provide your review with emojis for clarity. Focus on the actual PR purpose, not incidental changes."
 
             # Run analysis with cost control using determined command
             echo "🤖 Analyzing code with GPT-5..."
-            $GPT5_CMD "$ANALYSIS_PROMPT" --effort medium --max-tokens 1000 || echo "⚠️ Code analysis failed - check API key configuration"
+            $GPT5_CMD "$ANALYSIS_PROMPT" --effort low --max-tokens 800 || echo "⚠️ Code analysis failed - check API key configuration"
             echo ""
           else
             echo "## 📝 Code Analysis"
