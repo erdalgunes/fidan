@@ -196,6 +196,9 @@ jobs:
           
       - name: Generate AI Review
         if: steps.changed-files.outputs.skip_review == 'false'
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           cat > review_script.sh << 'EOF'
           #!/bin/bash
@@ -206,7 +209,7 @@ jobs:
           # Security research using Tavily (if available)
           if [ "$TAVILY_AVAILABLE" = "true" ] && [ -n "${{ steps.tavily-research.outputs.deps_changed }}" ]; then
             echo "## 🔐 Security Analysis"
-            $TAVILY_CMD "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 2>/dev/null || echo "⚠️ Security research failed"
+            $TAVILY_CMD "security vulnerabilities ${{ steps.tavily-research.outputs.file_types }} dependencies 2024" --max-results 2 || echo "⚠️ Security research failed"
             echo ""
           fi
           
@@ -229,13 +232,13 @@ jobs:
           Provide specific, actionable feedback with emojis. If no issues found, say so briefly."
 
             # Run analysis with cost control using determined command
-            echo "$ANALYSIS_PROMPT" | $GPT5_CMD --effort medium --max-tokens 1000 2>/dev/null || echo "⚠️ Code analysis failed"
+            echo "$ANALYSIS_PROMPT" | $GPT5_CMD --effort medium --max-tokens 1000 || echo "⚠️ Code analysis failed"
           else
             echo "## 📝 Code Analysis"
             echo "⚠️ GPT-5 not available via uvx"
             if [ "$TAVILY_AVAILABLE" = "true" ]; then
               echo "🔍 Using Tavily for alternative analysis..."
-              $TAVILY_CMD "code review ${{ github.event.repository.name }} ${{ steps.tavily-research.outputs.file_types }} best practices" --max-results 3 2>/dev/null || echo "⚠️ Alternative analysis failed"
+              $TAVILY_CMD "code review ${{ github.event.repository.name }} ${{ steps.tavily-research.outputs.file_types }} best practices" --max-results 3 || echo "⚠️ Alternative analysis failed"
             fi
           fi
           
